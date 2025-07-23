@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
+
 import { Log } from '@/models/Log';
 
 export async function GET(req: Request) {
@@ -12,6 +13,7 @@ export async function GET(req: Request) {
 
     try {
       await connectDB();
+
       
       // Build query
       const query: any = {};

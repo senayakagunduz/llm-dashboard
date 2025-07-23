@@ -3,6 +3,7 @@ import { Log } from '@/models/Log';
 
 export async function POST(req: Request) {
   await connectDB();
+
   const body = await req.json();
 
   const {
