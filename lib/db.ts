@@ -1,22 +1,53 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI as string;
-
-if (!MONGODB_URI) {
-  throw new Error('MongoDB URI not defined');
+// Global caching için type declaration
+declare global {
+  var mongoose: any; // This must be a `var` and not a `let / const`
 }
 
-let cached = (global as any).mongoose || { conn: null, promise: null };
+const MONGODB_URI = process.env.MONGODB_URI;
 
-export async function connectToDatabase() {
-  if (cached.conn) return cached.conn;
+// Sadece server-side'da environment check yap
+if (!MONGODB_URI && typeof window === 'undefined') {
+  throw new Error("Please define the MONGODB_URI environment variable inside .env.local");
+}
+
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+export const connectDB = async () => {
+  // Client-side'da çalışmasını engelle
+  if (typeof window !== 'undefined') {
+    return;
+  }
+
+  if (cached.conn) {
+    return cached.conn;
+  }
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
+    const opts = {
       bufferCommands: false,
+    };
+
+    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
+      console.log("MongoDB connected");
+      return mongoose;
+    }).catch((error) => {
+      console.log("MongoDB connection error:", error);
+      throw error;
     });
   }
 
-  cached.conn = await cached.promise;
-  return cached.conn;
-}
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
+  } catch (error) {
+    cached.promise = null;
+    console.log("Database connection failed:", error);
+    throw error;
+  }
+};

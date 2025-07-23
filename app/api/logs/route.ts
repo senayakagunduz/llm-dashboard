@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
+import { connectDB } from '@/lib/db';
 import { Log } from '@/models/Log';
 
 export async function GET(req: Request) {
@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const userId = url.searchParams.get('userId');
 
     try {
-      await connectToDatabase();
+      await connectDB();
       
       // Build query
       const query: any = {};

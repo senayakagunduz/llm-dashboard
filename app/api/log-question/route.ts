@@ -1,9 +1,9 @@
 
-import { connectToDatabase } from '@/lib/db';
+import { connectDB } from '@/lib/db';
 import { Log } from '@/models/Log';
 
 export async function POST(req: Request) {
-  await connectToDatabase();
+  await connectDB();
   const body = await req.json();
 
   const {

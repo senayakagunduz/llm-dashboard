@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/db';
+import { connectDB } from '@/lib/db';
 import { Log } from '@/models/Log';
 
 export async function POST(request: Request) {
   try {
     // Veritabanına bağlan
-    await connectToDatabase();
+    await connectDB();
 
     // Örnek log verileri
     const logData1 = {
