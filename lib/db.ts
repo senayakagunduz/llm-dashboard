@@ -1,3 +1,4 @@
+//lib/db.ts
 import mongoose from "mongoose";
 
 // Global caching için type declaration
@@ -6,6 +7,7 @@ declare global {
 }
 
 const MONGODB_URI = process.env.MONGODB_URI;
+console.log("Connecting to MongoDB at:", process.env.MONGODB_URI);
 
 // Sadece server-side'da environment check yap
 if (!MONGODB_URI && typeof window === 'undefined') {

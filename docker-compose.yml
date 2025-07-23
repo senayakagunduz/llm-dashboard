@@ -14,14 +14,21 @@ services:
 
   nextjs:
     build:
-      context: .        # . ile Dockerfile'ın olduğu yeri belirtirsin
-    container_name: nextjs-app
+      context: .
+    # container_name: nextjs-app
     ports:
       - '3000:3000'
     environment:
-      - MONGODB_URI=mongodb://mongo:27017/mydb
+      - MONGODB_URI=mongodb://admin:admin123@mongo:27017/llm-monitoring?authSource=admin
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=NgmZsfLUV4Lq0itjiM8Jm7u8NG5mEE0O/M9guzDO6RM
+      - NODE_ENV=development
     depends_on:
       - mongo
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
 
 volumes:
   mongo-data:
