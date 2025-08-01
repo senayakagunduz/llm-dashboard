@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import User from '../models/User';
+import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 
 // Using a local MongoDB connection without authentication for development
@@ -36,6 +36,8 @@ async function createAdmin() {
 
     await admin.save();
     console.log('Admin user created successfully');
+    console.log('Email: admin@example.com');
+    console.log('Password: admin123');
     process.exit(0);
   } catch (error) {
     console.error('Error creating admin user:', error);

@@ -1,8 +1,9 @@
 "use client"
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { MessageSquare, XCircle, UserCircle2, AlertCircle, CheckCircle, CheckCircle2, Clock } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
+import { MessageSquare, XCircle, UserCircle2, AlertCircle, CheckCircle, CheckCircle2, Clock, UserCog, Settings } from 'lucide-react';
+import Link from 'next/link';
 
 interface Stats {
   total: number;
@@ -22,7 +23,7 @@ export default function Dashboard() {
     pending: 0,
     avgResponseTime: 0
   });
-  
+
   const [logs, setLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -34,7 +35,7 @@ export default function Dashboard() {
           setIsLoading(true);
           const response = await fetch('/api/logs');
           const data = await response.json();
-          
+
           if (data.success) {
             setLogs(data.data);
             setStats({
@@ -51,7 +52,7 @@ export default function Dashboard() {
           setIsLoading(false);
         }
       };
-      
+
       fetchData();
     } else if (status === 'unauthenticated') {
       router.push('/api/auth/signin');
@@ -80,15 +81,31 @@ export default function Dashboard() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">LLM Monitoring Dashboard</h1>
-              <p className="text-gray-600 mt-1">Welcome back, {session?.user?.name}</p>
+              <div className="flex items-center gap-4">
+                <p className="text-gray-600 mt-2">Welcome back, {session?.user?.name}</p>
+              </div>
             </div>
+           
+            {session?.user?.role === 'admin' && (
+              <Link
+                href="/admin"
+                className="group flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all duration-200 ease-in-out shadow-sm hover:shadow-md"
+                title="Admin Panel"
+              >
+                <Settings className="h-5 w-5 text-indigo-100 group-hover:scale-110 transition-transform" />
+                <span className="hidden md:inline font-medium">Admin Panel</span>
+              </Link>
+            )}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-gray-600">
                 <UserCircle2 className="h-5 w-5" />
                 <span>{session?.user?.email}</span>
               </div>
               <button
-                onClick={() => router.push('/api/auth/signout')}
+                onClick={async () => {
+                  await signOut({ callbackUrl: '/signin' });
+                  router.push('/signin');
+                }}
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
               >
                 Sign Out
@@ -169,11 +186,10 @@ export default function Dashboard() {
                           <p className="font-medium">{log.question}</p>
                           <p className="text-sm text-gray-600 mt-1">{log.answer?.substring(0, 100)}{log.answer?.length > 100 ? '...' : ''}</p>
                         </div>
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          log.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        <span className={`px-2 py-1 text-xs rounded-full ${log.status === 'completed' ? 'bg-green-100 text-green-800' :
                           log.status === 'error' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
                           {log.status}
                         </span>
                       </div>

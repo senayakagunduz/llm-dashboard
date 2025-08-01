@@ -15,6 +15,7 @@ services:
   nextjs:
     build:
       context: .
+       dockerfile: Dockerfile
     # container_name: nextjs-app
     ports:
       - '3000:3000'
@@ -25,10 +26,11 @@ services:
       - NODE_ENV=development
     depends_on:
       - mongo
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
+    restart: unless-stopped
+   # volumes:
+      # - .:/app
+      # - /app/node_modules
+      # - /app/.next
 
 volumes:
   mongo-data:

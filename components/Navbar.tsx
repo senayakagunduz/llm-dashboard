@@ -22,9 +22,6 @@ export default async function Navbar() {
               <li className="px-3 py-1">
                 <Link href="/login">Login</Link>
               </li>
-              {/* <li className="px-3 py-1">
-                <Link href="/register">Signup</Link>
-              </li> */}
             </>
           )}
         </ul>
