@@ -338,7 +338,7 @@ console.log("frontend email", formData.email)
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'admin'
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isActive===true
                         ? 'bg-green-100 text-green-800'
                         : 'bg-gray-100 text-gray-800'
                         }`}>
