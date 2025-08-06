@@ -9,45 +9,39 @@ export async function POST(request: Request) {
 
     // Örnek log verileri
     const logData1 = {
-      id: 'log1',
-      question: 'Merhaba, nasıl yardımcı olabilirim?',
-      answer: 'Merhaba! Size yardımcı olmaktan memnuniyet duyarım.',
-      userId: 'user123',
-      sessionId: 'session456',
-      timestamp: new Date().toISOString(),
-      responseTime: 1500,
-      model: 'gpt-3.5',
-      tokensUsed: 150,
-      status: 'completed',
-      completedAt: new Date().toISOString()
+      requestId: 'req_' + Date.now(),
+      applianceId: 'T999927528921570060524',
+      sessionId: 'sess_' + Date.now(),
+      deviceUDID: '0d3b60cc4328e606',
+      homeId: '746972',
+      prompt: 'Kurutma makinesi çalıştır',
+      response: 'Kurutma makinesi başlatılıyor',
+      skuNumber: 'ABC123',
+      timestamp: new Date()
     };
 
     const logData2 = {
-      id: 'log2',
-      question: 'Bu sorunun çözümü nedir?',
-      answer: 'Bu sorunun çözümü şunlar olabilir: 1) X, 2) Y, 3) Z',
-      userId: 'user124',
-      sessionId: 'session457',
-      timestamp: new Date().toISOString(),
-      responseTime: 2000,
-      model: 'gpt-4',
-      tokensUsed: 200,
-      status: 'completed',
-      completedAt: new Date().toISOString()
+      requestId: 'req_' + (Date.now() + 1),
+      applianceId: 'T999927528921570060525',
+      sessionId: 'sess_' + (Date.now() + 1),
+      deviceUDID: '1e4c71dd5439f717',
+      homeId: '746973',
+      prompt: 'Buzdolabı sıcaklığını ayarla',
+      response: 'Buzdolabı sıcaklığı 4°C olarak ayarlandı',
+      skuNumber: 'DEF456',
+      timestamp: new Date()
     };
 
     const logData3 = {
-      id: 'log3',
-      question: 'Sistem nasıl çalışır?',
-      answer: 'Sistem, kullanıcı sorularını AI modeli ile cevaplar ve tüm etkileşimleri loglar.',
-      userId: 'user125',
-      sessionId: 'session458',
-      timestamp: new Date().toISOString(),
-      responseTime: 1800,
-      model: 'gpt-3.5',
-      tokensUsed: 175,
-      status: 'completed',
-      completedAt: new Date().toISOString()
+      requestId: 'req_' + (Date.now() + 2),
+      applianceId: 'T999927528921570060526',
+      sessionId: 'sess_' + (Date.now() + 2),
+      deviceUDID: '2f5d82ee6540a828',
+      homeId: '746974',
+      prompt: 'Çamaşır makinesi programını değiştir',
+      response: 'Çamaşır makinesi programı pamuklu 40°C olarak ayarlandı',
+      skuNumber: 'GHI789',
+      timestamp: new Date()
     };
 
     // Önce veritabanında aynı id'ye sahip log var mı kontrol et
@@ -58,7 +52,7 @@ export async function POST(request: Request) {
     
     // Mevcut loglara bakarak yeni logları filtrele
     const logsToSave = newLogs.filter(log => 
-      !existingLogs.some(existingLog => existingLog.id === log.id)
+      !existingLogs.some(existingLog => existingLog.requestId === log.requestId)
     );
     
     // Yeni logları kaydet

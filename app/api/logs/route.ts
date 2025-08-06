@@ -9,20 +9,40 @@ export async function GET(req: Request) {
     const url = new URL(req.url || 'http://localhost'); // fallback
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '50');
-    const status = url.searchParams.get('status');
-    const userId = url.searchParams.get('userId');
+    const applianceId = url.searchParams.get('applianceId');
+    const deviceUDID = url.searchParams.get('deviceUDID');
+    const homeId = url.searchParams.get('homeId');
+    const skuNumber = url.searchParams.get('skuNumber');
+    const startDate = url.searchParams.get('startDate');
+    const endDate = url.searchParams.get('endDate');
 
     try {
       await connectDB();
 
-      
       // Build query
       const query: any = {};
-      if (status && status !== 'all') {
-        query.status = status;
+      if (applianceId) {
+        query.applianceId = applianceId;
       }
-      if (userId) {
-        query.userId = userId;
+      if (deviceUDID) {
+        query.deviceUDID = deviceUDID;
+      }
+      if (homeId) {
+        query.homeId = homeId;
+      }
+      if (skuNumber) {
+        query.skuNumber = skuNumber;
+      }
+
+      // Add date range filtering
+      if (startDate || endDate) {
+        query.timestamp = {};
+        if (startDate) {
+          query.timestamp.$gte = new Date(startDate);
+        }
+        if (endDate) {
+          query.timestamp.$lte = new Date(endDate);
+        }
       }
 
       // Get total count for pagination
@@ -30,7 +50,7 @@ export async function GET(req: Request) {
       
       // Sort and paginate
       const logs = await Log.find(query)
-        .sort({ timestamp: -1 })
+        .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(limit);
 
@@ -40,10 +60,19 @@ export async function GET(req: Request) {
           $group: {
             _id: null,
             total: { $sum: 1 },
-            completed: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
-            pending: { $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] } },
-            error: { $sum: { $cond: [{ $eq: ["$status", "error"] }, 1, 0] } },
-            avgResponseTime: { $avg: "$responseTime" }
+            byAppliance: { $addToSet: "$applianceId" },
+            byDevice: { $addToSet: "$deviceUDID" },
+            byHome: { $addToSet: "$homeId" },
+            bySKU: { $addToSet: "$skuNumber" }
+          }
+        },
+        {
+          $project: {
+            total: 1,
+            uniqueAppliances: { $size: "$byAppliance" },
+            uniqueDevices: { $size: "$byDevice" },
+            uniqueHomes: { $size: "$byHome" },
+            uniqueSKUs: { $size: "$bySKU" }
           }
         }
       ]);

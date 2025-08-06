@@ -1,0 +1,23 @@
+// "use client"
+// import { useState, useEffect } from 'react';
+// import { useRouter } from 'next/navigation';
+// import { useSession, signOut } from 'next-auth/react';
+// import { MessageSquare, XCircle, UserCircle2, AlertCircle, CheckCircle, CheckCircle2, Clock, Settings } from 'lucide-react';
+// import Link from 'next/link';
+
+// ... [rest of your imports and interfaces]
+
+export default function Dashboard() {
+  // ... [other state declarations]
+  
+  const [uniqueValues, setUniqueValues] = useState<UniqueValues>({
+    appliances: [],
+    devices: [],
+    homes: [],
+    skus: []
+  });
+
+  // ... [rest of your component code]
+}
+
+// ... [rest of your file]

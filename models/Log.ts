@@ -1,19 +1,16 @@
 // models/Log.ts
-import mongoose, { Schema, model, models } from 'mongoose';
+import  { Schema, model, models } from 'mongoose';
 
 const LogSchema = new Schema({
-  id: { type: String, required: true },
-  question: String,
-  answer: String,
-  userId: String,
+  requestId: { type: String, required: true },
+  applianceId: String,
   sessionId: String,
-  timestamp: String,
-  responseTime: Number,
-  model: String,
-  tokensUsed: Number,
-  error: String,
-  status: { type: String, enum: ['pending', 'completed', 'error'], default: 'pending' },
-  completedAt: String,
+  deviceUDID: String,
+  homeId: String,
+  prompt: String,
+  response: String,
+  skuNumber: String,
+  timestamp: { type: Date, default: Date.now },
 });
 
 export const Log = models.log || model('log', LogSchema);
