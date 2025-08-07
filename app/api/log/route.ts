@@ -5,7 +5,25 @@ export async function POST(req: Request) {
   await connectDB();
 
   try {
-    const body = await req.json();
+    // Log raw request body for debugging
+    const rawBody = await req.text();
+    console.log('Raw request body:', rawBody);
+    
+    let body;
+    try {
+      body = JSON.parse(rawBody);
+    } catch (parseError) {
+      console.error('Error parsing JSON:', parseError);
+      const errorMessage = parseError instanceof Error ? parseError.message : 'Failed to parse JSON';
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Invalid JSON format',
+        details: errorMessage 
+      }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     const {
       requestId,
@@ -24,57 +42,68 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: 'Request ID is required' }), { status: 400 });
     }
 
-    // Try to find existing log
-    let log = await Log.findOne({ requestId });
+    try {
+      // Try to find existing log
+      let log = await Log.findOne({ requestId });
 
-    if (log) {
-      // Update existing log
-      if (response) log.response = response;
-      if (prompt) log.prompt = prompt;
-      if (applianceId) log.applianceId = applianceId;
-      if (sessionId) log.sessionId = sessionId;
-      if (deviceUDID) log.deviceUDID = deviceUDID;
-      if (homeId) log.homeId = homeId;
-      if (skuNumber) log.skuNumber = skuNumber;
-      if (responseTime) log.responseTime = responseTime;
-      if (timestamp) log.timestamp = timestamp;
-    } else {
-      // Create new log
-      if (!prompt) {
-        return new Response(JSON.stringify({ error: 'Prompt is required for new logs' }), { status: 400 });
+      if (log) {
+        // Update existing log
+        if (response !== undefined) log.response = response;
+        if (prompt !== undefined) log.prompt = prompt;
+        if (applianceId !== undefined) log.applianceId = applianceId;
+        if (sessionId !== undefined) log.sessionId = sessionId;
+        if (deviceUDID !== undefined) log.deviceUDID = deviceUDID;
+        if (homeId !== undefined) log.homeId = homeId;
+        if (skuNumber !== undefined) log.skuNumber = skuNumber;
+        if (responseTime !== undefined) log.responseTime = responseTime;
+        if (timestamp !== undefined) log.timestamp = timestamp;
+      } else {
+        // Create new log
+        if (!prompt) {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Prompt is required for new logs' 
+          }), { 
+            status: 400,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
+        log = new Log({
+          requestId,
+          applianceId: applianceId || '',
+          sessionId: sessionId || '',
+          deviceUDID: deviceUDID || '',
+          homeId: homeId || '',
+          prompt,
+          response: response || '',
+          skuNumber: skuNumber || '',
+          responseTime: responseTime || 0,
+          timestamp: timestamp || new Date()
+        });
       }
-      
-      log = new Log({
-        requestId,
-        applianceId,
-        sessionId,
-        deviceUDID,
-        homeId,
-        prompt,
-        response: response || '',
-        skuNumber,
-        timestamp,
-        responseTime,
+
+      await log.save();
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        data: log 
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      const errorMessage = dbError instanceof Error ? dbError.message : 'Unknown database error';
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Failed to save log',
+        details: errorMessage
+      }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
       });
     }
-
-    await log.save();
-
-    return new Response(JSON.stringify({ 
-      success: true, 
-      log: {
-        requestId: log.requestId,
-        prompt: log.prompt,
-        response: log.response,
-        timestamp: log.timestamp,
-        responseTime: log.responseTime,
-        applianceId: log.applianceId,
-        sessionId: log.sessionId,
-        deviceUDID: log.deviceUDID,
-        homeId: log.homeId,
-        skuNumber: log.skuNumber,
-      }
-    }), { status: 200 });
 
   } catch (error) {
     console.error('Error saving log:', error);
