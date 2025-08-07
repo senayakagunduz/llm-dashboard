@@ -13,7 +13,8 @@ const sampleLogs = [
       prompt: 'Kurutma makinesi çalıştır',
       response: 'Kurutma makinesi başlatılıyor',
       skuNumber: 'ABC123',
-      timestamp: new Date()
+      timestamp: new Date(),
+      responseTime: 1000,
   },
   {
     requestId: 'req_' + (Date.now() + 1),
@@ -24,7 +25,8 @@ const sampleLogs = [
       prompt: 'Buzdolabı sıcaklığını ayarla',
       response: 'Buzdolabı sıcaklığı 4°C olarak ayarlandı',
       skuNumber: 'DEF456',
-      timestamp: new Date()
+      timestamp: new Date(),
+      responseTime: 500,
   },
   {
     requestId: 'req_' + (Date.now() + 2),
@@ -35,7 +37,8 @@ const sampleLogs = [
       prompt: 'Çamaşır makinesi programını değiştir',
       response: 'Çamaşır makinesi programı pamuklu 40°C olarak ayarlandı',
       skuNumber: 'GHI789',
-      timestamp: new Date()
+      timestamp: new Date(),
+      responseTime: 1500,
   }
 ];
 

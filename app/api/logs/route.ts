@@ -48,18 +48,43 @@ export async function GET(req: Request) {
       // Get total count for pagination
       const total = await Log.countDocuments(query);
       
+      // Get sort parameters from URL
+      const sortBy = url.searchParams.get('sortBy') || 'timestamp';
+      const sortOrder = url.searchParams.get('sortOrder') === 'asc' ? 1 : -1;
+
+      // Create sort options
+      const sortOptions: any = { [sortBy]: sortOrder };
+
       // Sort and paginate
-      const logs = await Log.find(query)
-        .sort({ createdAt: -1 })
+      const logs = await Log.find(query, {
+        prompt: 1,
+        response: 1,
+        applianceId: 1,
+        deviceUDID: 1,
+        homeId: 1,
+        skuNumber: 1,
+        timestamp: 1,
+        responseTime: 1,
+        status: 1,
+        _id: 1
+      })
+        .sort(sortOptions)
         .skip((page - 1) * limit)
         .limit(limit);
 
       // Calculate stats
       const stats = await Log.aggregate([
         {
+          $match: query // Mevcut filtreleri uygula
+        },
+        {
           $group: {
             _id: null,
             total: { $sum: 1 },
+            completed: { $sum: { $cond: [{ $ne: ["$response", ""] }, 1, 0] } },
+            pending: { $sum: { $cond: [{ $eq: ["$response", ""] }, 1, 0] } },
+            error: { $sum: { $cond: [{ $eq: ["$status", "error"] }, 1, 0] } },
+            avgResponseTime: { $avg: "$responseTime" },
             byAppliance: { $addToSet: "$applianceId" },
             byDevice: { $addToSet: "$deviceUDID" },
             byHome: { $addToSet: "$homeId" },
@@ -69,6 +94,10 @@ export async function GET(req: Request) {
         {
           $project: {
             total: 1,
+            completed: 1,
+            pending: 1,
+            error: 1,
+            avgResponseTime: { $round: ["$avgResponseTime", 2] }, // İki ondalık basamağa yuvarla
             uniqueAppliances: { $size: "$byAppliance" },
             uniqueDevices: { $size: "$byDevice" },
             uniqueHomes: { $size: "$byHome" },

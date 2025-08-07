@@ -15,7 +15,9 @@ export async function POST(req: Request) {
       homeId,
       prompt,
       response,
-      skuNumber
+      skuNumber,
+      responseTime,
+      timestamp,
     } = body;
 
     if (!requestId) {
@@ -34,6 +36,8 @@ export async function POST(req: Request) {
       if (deviceUDID) log.deviceUDID = deviceUDID;
       if (homeId) log.homeId = homeId;
       if (skuNumber) log.skuNumber = skuNumber;
+      if (responseTime) log.responseTime = responseTime;
+      if (timestamp) log.timestamp = timestamp;
     } else {
       // Create new log
       if (!prompt) {
@@ -49,7 +53,8 @@ export async function POST(req: Request) {
         prompt,
         response: response || '',
         skuNumber,
-        timestamp: new Date()
+        timestamp,
+        responseTime,
       });
     }
 
@@ -61,7 +66,13 @@ export async function POST(req: Request) {
         requestId: log.requestId,
         prompt: log.prompt,
         response: log.response,
-        timestamp: log.timestamp
+        timestamp: log.timestamp,
+        responseTime: log.responseTime,
+        applianceId: log.applianceId,
+        sessionId: log.sessionId,
+        deviceUDID: log.deviceUDID,
+        homeId: log.homeId,
+        skuNumber: log.skuNumber,
       }
     }), { status: 200 });
 

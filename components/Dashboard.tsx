@@ -1,368 +1,3 @@
-// "use client"
-// import { useState, useEffect } from 'react';
-// import { useRouter } from 'next/navigation';
-// import { useSession, signOut } from 'next-auth/react';
-// import { MessageSquare, XCircle, UserCircle2, AlertCircle, CheckCircle, CheckCircle2, Clock, Settings } from 'lucide-react';
-// import Link from 'next/link';
-
-// interface Stats {
-//   total: number;
-//   completed: number;
-//   error: number;
-//   pending: number;
-//   avgResponseTime: number;
-// }
-
-// export default function Dashboard() {
-//   const { data: session, status } = useSession();
-//   const router = useRouter();
-//   const [stats, setStats] = useState<Stats>({
-//     total: 0,
-//     completed: 0,
-//     error: 0,
-//     pending: 0,
-//     avgResponseTime: 0
-//   });
-
-//   const [logs, setLogs] = useState<any[]>([]);
-//   const [isLoading, setIsLoading] = useState(true);
-
-//   // Fetch logs and stats
-//   useEffect(() => {
-//     if (status === 'authenticated') {
-//       const fetchData = async () => {
-//         try {
-//           setIsLoading(true);
-//           const response = await fetch('/api/logs');
-//           const data = await response.json();
-//           console.log(data);
-
-//           if (data.success) {
-//             setLogs(data.data);
-//             setStats({
-//               total: data.stats?.total || 0,
-//               completed: data.stats?.completed || 0,
-//               error: data.stats?.error || 0,
-//               pending: data.stats?.pending || 0,
-//               avgResponseTime: Math.round(data.stats?.avgResponseTime || 0)
-//             });
-//           }
-//         } catch (error) {
-//           console.error('Error fetching logs:', error);
-//         } finally {
-//           setIsLoading(false);
-//         }
-//       };
-
-//       fetchData();
-//     } else if (status === 'unauthenticated') {
-//       router.push('/api/auth/signin');
-//     }
-//   }, [status, router]);
-
-//   // Loading state
-//   if (status === 'loading') {
-//     return (
-//       <div className="min-h-screen flex items-center justify-center">
-//         <div className="text-lg">Loading...</div>
-//       </div>
-//     );
-//   }
-
-//   // Redirect if not authenticated
-//   if (status === 'unauthenticated') {
-//     return null;
-//   }
-
-//   return (
-//     <div className="min-h-screen bg-gray-50">
-//       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-//         {/* Header */}
-//         <div className="mb-8">
-//           <div className="flex justify-between items-center">
-//             <div>
-//               <h1 className="text-3xl font-bold text-gray-900">LLM Monitoring Dashboard</h1>
-//               <div className="flex items-center gap-4">
-//                 <p className="text-gray-600 mt-2">Welcome back, {session?.user?.name}</p>
-//               </div>
-//             </div>
-
-//             {session?.user?.role === 'admin' && (
-//               <Link
-//                 href="/admin"
-//                 className="group flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all duration-200 ease-in-out shadow-sm hover:shadow-md"
-//                 title="Admin Panel"
-//               >
-//                 <Settings className="h-5 w-5 text-indigo-100 group-hover:scale-110 transition-transform" />
-//                 <span className="hidden md:inline font-medium">Admin Panel</span>
-//               </Link>
-//             )}
-//             <div className="flex items-center gap-4">
-//               <div className="flex items-center gap-2 text-gray-600">
-//                 <UserCircle2 className="h-5 w-5" />
-//                 <span>{session?.user?.email}</span>
-//               </div>
-//               <button
-//                 onClick={async () => {
-//                   await signOut({ callbackUrl: '/signin' });
-//                   router.push('/signin');
-//                 }}
-//                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
-//               >
-//                 Sign Out
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Stats Grid */}
-//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-//           <div className="bg-white rounded-lg shadow p-6">
-//             <div className="flex items-center justify-between">
-//               <div>
-//                 <p className="text-sm font-medium text-gray-600">Total Requests</p>
-//                 <p className="text-3xl font-bold text-gray-900">{stats.total.toLocaleString()}</p>
-//               </div>
-//               <MessageSquare className="h-8 w-8 text-blue-500" />
-//             </div>
-//           </div>
-
-//           <div className="bg-white rounded-lg shadow p-6">
-//             <div className="flex items-center justify-between">
-//               <div>
-//                 <p className="text-sm font-medium text-gray-600">Completed</p>
-//                 <p className="text-3xl font-bold text-green-600">{stats.completed.toLocaleString()}</p>
-//               </div>
-//               <CheckCircle2 className="h-8 w-8 text-green-500" />
-//             </div>
-//           </div>
-
-//           <div className="bg-white rounded-lg shadow p-6">
-//             <div className="flex items-center justify-between">
-//               <div>
-//                 <p className="text-sm font-medium text-gray-600">Errors</p>
-//                 <p className="text-3xl font-bold text-red-600">{stats.error.toLocaleString()}</p>
-//               </div>
-//               <XCircle className="h-8 w-8 text-red-500" />
-//             </div>
-//           </div>
-
-//           <div className="bg-white rounded-lg shadow p-6">
-//             <div className="flex items-center justify-between">
-//               <div>
-//                 <p className="text-sm font-medium text-gray-600">Pending</p>
-//                 <p className="text-3xl font-bold text-yellow-600">{stats.pending.toLocaleString()}</p>
-//               </div>
-//               <Clock className="h-8 w-8 text-yellow-500" />
-//             </div>
-//           </div>
-
-//           <div className="bg-white rounded-lg shadow p-6">
-//             <div className="flex items-center justify-between">
-//               <div>
-//                 <p className="text-sm font-medium text-gray-600">Avg Response</p>
-//                 <p className="text-3xl font-bold text-purple-600">{stats.avgResponseTime}ms</p>
-//               </div>
-//               <AlertCircle className="h-8 w-8 text-purple-500" />
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Main Content Area */}
-//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-//           {/* Recent Activity */}
-//           {/* <div className="lg:col-span-2 bg-white rounded-lg shadow">
-//             <div className="px-6 py-4 border-b border-gray-200">
-//               <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
-//             </div>
-//             <div className="p-6">
-//               {isLoading ? (
-//                 <div className="text-center text-gray-500 py-8">Loading logs...</div>
-//               ) : logs.length > 0 ? (
-//                 <div className="space-y-4">
-//                   {logs.map((log) => (
-//                     <div key={log._id} className="p-4 border rounded-lg">
-//                       <div className="flex justify-between items-start">
-//                         <div>
-//                           <p className="font-medium">{log.prompt}</p>
-//                           <p className="text-sm text-gray-600 mt-1">{log.response?.substring(0, 100)}{log.response?.length > 100 ? '...' : ''}</p>
-//                           <div className="mt-2 text-xs text-gray-500">
-//                             <span>Appliance: {log.applianceId}</span>
-//                             {log.skuNumber && <span className="ml-2">SKU: {log.skuNumber}</span>}
-//                           </div>
-//                         </div>
-//                         <div className="text-right">
-//                           <div className="text-xs text-gray-500 my-7">
-//                             {new Date(log.timestamp).toLocaleString()}
-//                           </div>
-//                         </div>
-//                       </div>
-//                       <div className="mt-2 flex justify-between text-xs text-gray-500">
-//                         <span>Device: {log.deviceUDID || 'N/A'}</span>
-//                         <span>Response: {log.responseTime}ms</span>
-//                       </div>
-//                     </div>
-//                   ))}
-//                 </div>
-//               ) : (
-//                 <div className="text-center text-gray-500 py-8">
-//                   No recent activity to display
-//                 </div>
-//               )}
-//             </div>
-//           </div> */}
-//           <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
-//             <div className="px-6 py-5 border-b border-gray-100">
-//               <div className="flex items-center justify-between">
-//                 <div className="flex items-center space-x-2">
-//                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-//                   <h3 className="text-xl font-semibold text-gray-800">Recent Activity</h3>
-//                 </div>
-//                 <span className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
-//                   {logs.length} entries
-//                 </span>
-//               </div>
-//             </div>
-
-//             <div className="p-6">
-//               {isLoading ? (
-//                 <div className="flex flex-col items-center justify-center py-12">
-//                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3"></div>
-//                   <p className="text-gray-500">Loading your activity...</p>
-//                 </div>
-//               ) : logs.length > 0 ? (
-//                 <div className="space-y-4">
-//                   {logs.map((log, index) => (
-//                     <div key={log._id} className="group bg-gray-50 hover:bg-blue-50 rounded-xl p-5 border border-transparent hover:border-blue-200 transition-all duration-200">
-//                       <div className="flex items-start space-x-4">
-//                         {/* Activity Icon */}
-//                         <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-//                           <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-2.747-.426l-2.123.707c-.396.132-.795.044-1.09-.251a.97.97 0 01-.251-1.09l.707-2.123A8.955 8.955 0 013 12C3 7.582 6.582 4 12 4s9 3.582 9 8z" />
-//                           </svg>
-//                         </div>
-
-//                         <div className="flex-1 min-w-0">
-//                           {/* Main Content */}
-//                           <div className="mb-3">
-//                             <h4 className="text-lg font-medium text-gray-900 mb-2 leading-tight">
-//                               {log.prompt}
-//                             </h4>
-
-//                             {log.response && (
-//                               <div className="bg-white rounded-lg p-3 border border-gray-200">
-//                                 <p className="text-gray-700 text-sm leading-relaxed">
-//                                   {log.response.substring(0, 150)}
-//                                   {log.response.length > 150 && (
-//                                     <span className="text-blue-500 cursor-pointer hover:underline ml-1">
-//                                       read more
-//                                     </span>
-//                                   )}
-//                                 </p>
-//                               </div>
-//                             )}
-//                           </div>
-
-//                           {/* Metadata Tags */}
-//                           <div className="flex flex-wrap gap-2 mb-3">
-//                             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-//                               📱 {log.applianceId}
-//                             </span>
-
-//                             {log.skuNumber && (
-//                               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-//                                 🏷️ {log.skuNumber}
-//                               </span>
-//                             )}
-
-//                             {log.deviceUDID && (
-//                               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-//                                 🔗 Device Connected
-//                               </span>
-//                             )}
-//                           </div>
-
-//                           {/* Footer Info */}
-//                           <div className="flex items-center justify-between text-xs text-gray-500">
-//                             <div className="flex items-center space-x-4">
-//                               <span className="flex items-center">
-//                                 <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-//                                 </svg>
-//                                 {new Date(log.timestamp).toLocaleDateString('tr-TR', {
-//                                   day: 'numeric',
-//                                   month: 'short',
-//                                   hour: '2-digit',
-//                                   minute: '2-digit'
-//                                 })}
-//                               </span>
-
-//                               {log.responseTime && (
-//                                 <span className="flex items-center">
-//                                   <div className={`w-2 h-2 rounded-full mr-1 ${log.responseTime < 1000 ? 'bg-green-400' : log.responseTime < 3000 ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
-//                                   {log.responseTime}ms
-//                                 </span>
-//                               )}
-//                             </div>
-
-//                             <span className="text-gray-400">#{index + 1}</span>
-//                           </div>
-//                         </div>
-//                       </div>
-//                     </div>
-//                   ))}
-//                 </div>
-//               ) : (
-//                 <div className="text-center py-16">
-//                   <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-//                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-//                     </svg>
-//                   </div>
-//                   <h4 className="text-lg font-medium text-gray-900 mb-2">No activity yet</h4>
-//                   <p className="text-gray-500 max-w-sm mx-auto">
-//                     Your recent interactions will appear here. Start using the system to see your activity log.
-//                   </p>
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-//           {/* System Status */}
-//           <div className="bg-white rounded-lg shadow">
-//             <div className="px-6 py-4 border-b border-gray-200">
-//               <h3 className="text-lg font-medium text-gray-900">System Status</h3>
-//             </div>
-//             <div className="p-6">
-//               <div className="space-y-4">
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">Database</span>
-//                   <div className="flex items-center gap-2">
-//                     <CheckCircle className="h-4 w-4 text-green-500" />
-//                     <span className="text-sm text-green-600">Connected</span>
-//                   </div>
-//                 </div>
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">Auth Service</span>
-//                   <div className="flex items-center gap-2">
-//                     <CheckCircle className="h-4 w-4 text-green-500" />
-//                     <span className="text-sm text-green-600">Active</span>
-//                   </div>
-//                 </div>
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">Monitoring</span>
-//                   <div className="flex items-center gap-2">
-//                     <CheckCircle className="h-4 w-4 text-green-500" />
-//                     <span className="text-sm text-green-600">Running</span>
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 "use client"
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -393,6 +28,10 @@ interface Filters {
   startDate: string;
   endDate: string;
   searchText: string;
+  sortBy: 'timestamp' | 'responseTime' | 'applianceId' | 'deviceUDID' | 'homeId' | 'skuNumber';
+  sortOrder: 'asc' | 'desc';
+  minResponseTime?: string;
+  maxResponseTime?: string;
 }
 
 export default function Dashboard() {
@@ -424,7 +63,11 @@ export default function Dashboard() {
     skuNumber: '',
     startDate: '',
     endDate: '',
-    searchText: ''
+    searchText: '',
+    sortBy: 'timestamp',
+    sortOrder: 'desc',
+    minResponseTime: '',
+    maxResponseTime: ''
   });
 
   // Unique values for dropdowns
@@ -547,6 +190,13 @@ export default function Dashboard() {
     }
   };
 
+  // Handle sort change
+  const handleSortChange = (sortBy: 'timestamp' | 'responseTime', sortOrder: 'asc' | 'desc') => {
+    const newFilters = { ...filters, sortBy, sortOrder };
+    setFilters(newFilters);
+    fetchData(newFilters);
+  };
+
   // Clear all filters
   const clearAllFilters = () => {
     const emptyFilters: Filters = {
@@ -556,7 +206,11 @@ export default function Dashboard() {
       skuNumber: '',
       startDate: '',
       endDate: '',
-      searchText: ''
+      searchText: '',
+      sortBy: 'timestamp',
+      sortOrder: 'desc',
+      minResponseTime: '',
+      maxResponseTime: ''
     };
     setFilters(emptyFilters);
     fetchData(emptyFilters);

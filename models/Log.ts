@@ -11,6 +11,7 @@ const LogSchema = new Schema({
   response: String,
   skuNumber: String,
   timestamp: { type: Date, default: Date.now },
+  responseTime: Number,
 });
 
 export const Log = models.log || model('log', LogSchema);
