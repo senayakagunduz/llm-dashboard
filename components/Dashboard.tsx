@@ -2,8 +2,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { MessageSquare, XCircle, UserCircle2, AlertCircle, CheckCircle, CheckCircle2, Clock, Settings, Filter, X, Search, Calendar, ChevronDown, RefreshCw } from 'lucide-react';
+import { MessageSquare, UserCircle2, AlertCircle, CheckCircle, CheckCircle2, Settings, Filter, X, Search, Calendar, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+import JSZip from 'jszip';
 
 interface Stats {
   total: number;
@@ -32,6 +33,11 @@ interface Filters {
   sortOrder: 'asc' | 'desc';
   minResponseTime?: string;
   maxResponseTime?: string;
+  sessionId?: string;
+  requestId?: string;
+  status?: string;
+  promptSearch: string;
+  responseSearch: string;
 }
 
 export default function Dashboard() {
@@ -67,7 +73,12 @@ export default function Dashboard() {
     sortBy: 'timestamp',
     sortOrder: 'desc',
     minResponseTime: '',
-    maxResponseTime: ''
+    maxResponseTime: '',
+    sessionId: '',
+    requestId: '',
+    status: '',
+    promptSearch: '',
+    responseSearch: ''
   });
 
   // Unique values for dropdowns
@@ -143,7 +154,7 @@ export default function Dashboard() {
         // Client-side search filter for prompt/response
         if (currentFilters.searchText) {
           const searchLower = currentFilters.searchText.toLowerCase();
-          filteredLogs = filteredLogs.filter((log: any) => 
+          filteredLogs = filteredLogs.filter((log: any) =>
             log.prompt?.toLowerCase().includes(searchLower) ||
             log.response?.toLowerCase().includes(searchLower)
           );
@@ -210,7 +221,12 @@ export default function Dashboard() {
       sortBy: 'timestamp',
       sortOrder: 'desc',
       minResponseTime: '',
-      maxResponseTime: ''
+      maxResponseTime: '',
+      sessionId: '',
+      requestId: '',
+      status: '',
+      promptSearch: '',
+      responseSearch: ''
     };
     setFilters(emptyFilters);
     fetchData(emptyFilters);
@@ -231,10 +247,195 @@ export default function Dashboard() {
     if (filters.skuNumber) activeFilters.push({ key: 'skuNumber', label: `SKU: ${filters.skuNumber}`, value: filters.skuNumber });
     if (filters.startDate) activeFilters.push({ key: 'startDate', label: `From: ${filters.startDate}`, value: filters.startDate });
     if (filters.endDate) activeFilters.push({ key: 'endDate', label: `To: ${filters.endDate}`, value: filters.endDate });
+    if (filters.sessionId) activeFilters.push({ key: 'sessionId', label: `Session ID: ${filters.sessionId}`, value: filters.sessionId });
+    if (filters.requestId) activeFilters.push({ key: 'requestId', label: `Request ID: ${filters.requestId}`, value: filters.requestId });
+    if (filters.status) activeFilters.push({ key: 'status', label: `Status: ${filters.status}`, value: filters.status });
+    if (filters.promptSearch) activeFilters.push({ key: 'promptSearch', label: `Prompt Search: "${filters.promptSearch}"`, value: filters.promptSearch });
+    if (filters.responseSearch) activeFilters.push({ key: 'responseSearch', label: `Response Search: "${filters.responseSearch}"`, value: filters.responseSearch });
     return activeFilters;
   };
 
-  // Initial data fetch
+  const handleFilterLongs = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Starting export process...');
+      
+      // Create URLSearchParams with current filters
+      const params = new URLSearchParams();
+      
+      // Add filters (remove empty values)
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== '' && value !== undefined && value !== null) {
+          // Skip searchText as it's handled client-side
+          if (key !== 'searchText') {
+            params.append(key, String(value));
+          }
+        }
+      });
+      
+      // Add export-specific parameters
+      params.append('limit', '10000');
+      params.append('page', '1');
+      params.append('export', 'true');
+  
+      const apiUrl = `/api/logs?${params.toString()}`;
+      console.log('API URL:', apiUrl);
+      console.log('Applied filters:', filters);
+  
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+  
+      console.log('Response status:', response.status);
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`API hatası: ${response.status} - ${response.statusText}`);
+      }
+  
+      const data = await response.json();
+      console.log('API Response received:', {
+        success: data.success,
+        hasData: !!data.data,
+        dataLength: data.data?.length || 0,
+        hasLogs: !!data.logs,
+        logsLength: data.logs?.length || 0,
+        totalFound: data.totalFound
+      });
+      
+      if (!data.success) {
+        throw new Error('API başarısız yanıt döndürdü');
+      }
+  
+      // Get logs from the response (API returns data field)
+      let logsToExport = data.data || [];
+      console.log(`Initial logs count: ${logsToExport.length}`);
+      
+      if (!logsToExport || logsToExport.length === 0) {
+        console.warn('No logs found with current filters');
+        alert("Filtrelenmiş sonuç bulunamadı. Lütfen filtrelerinizi kontrol edin.");
+        return;
+      }
+  
+      // Apply client-side searchText filter if exists
+      if (filters.searchText && filters.searchText.trim() !== '') {
+        const searchLower = filters.searchText.toLowerCase().trim();
+        const originalCount = logsToExport.length;
+        
+        logsToExport = logsToExport.filter((log:any) => {
+          const promptMatch = log.prompt?.toLowerCase().includes(searchLower) || false;
+          const responseMatch = log.response?.toLowerCase().includes(searchLower) || false;
+          return promptMatch || responseMatch;
+        });
+        
+        console.log(`Client-side search filter applied. Count: ${originalCount} -> ${logsToExport.length}`);
+      }
+      
+      if (logsToExport.length === 0) {
+        alert("Arama kriterinize uygun sonuç bulunamadı.");
+        return;
+      }
+  
+      console.log(`Final export count: ${logsToExport.length}`);
+  
+      // Prepare export data
+      const exportData = {
+        exportMetadata: {
+          exportDate: new Date().toISOString(),
+          exportedBy: session?.user?.email || 'Bilinmeyen Kullanıcı',
+          totalRecords: logsToExport.length,
+          appliedFilters: Object.entries(filters)
+            .filter(([key, value]) => value && value !== '')
+            .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {}),
+          exportVersion: '1.0'
+        },
+        logs: logsToExport.map((log:any, index:any) => ({
+          ...log,
+          exportIndex: index + 1,
+          // Convert timestamp to readable format for Excel/viewing
+          readableTimestamp: log.timestamp ? new Date(log.timestamp).toLocaleString('tr-TR') : null
+        }))
+      };
+  
+      // Create JSON string
+      const jsonString = JSON.stringify(exportData, null, 2);
+      console.log(`JSON string created, size: ${(jsonString.length / 1024).toFixed(2)} KB`);
+      
+      // Create ZIP file
+      const zip = new JSZip();
+      
+      // Add main data file
+      zip.file('filtered_logs.json', jsonString);
+      
+      // Add summary file
+      const summaryContent = `
+  Veri İhracat Özeti
+  ==================
+  İhracat Tarihi: ${new Date().toLocaleString('tr-TR')}
+  İhracat Eden: ${session?.user?.email || 'Bilinmeyen Kullanıcı'}
+  Toplam Kayıt: ${logsToExport.length}
+  
+  Uygulanan Filtreler:
+  ${Object.entries(filters)
+    .filter(([key, value]) => value && value !== '')
+    .map(([key, value]) => `- ${key}: ${value}`)
+    .join('\n') || 'Filtre uygulanmadı'}
+  
+  İhracat Dosyaları:
+  - filtered_logs.json: Ana veri dosyası (JSON formatında)
+  - summary.txt: Bu özet dosyası
+  
+  Kullanım Notu:
+  JSON dosyasını Excel'de açmak için "Veri > JSON'dan" seçeneğini kullanabilirsiniz.
+      `.trim();
+      
+      zip.file('summary.txt', summaryContent);
+      
+      // Generate ZIP
+      const zipBlob = await zip.generateAsync({ 
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 6 }
+      });
+      
+      console.log(`ZIP file generated, size: ${(zipBlob.size / 1024).toFixed(2)} KB`);
+      
+      // Create filename with timestamp and record count
+      const now = new Date();
+      const timestamp = now.toISOString().split('T')[0];
+      const timeString = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+      const filename = `logs_export_${timestamp}_${timeString}_${logsToExport.length}_records.zip`;
+      
+      // Download file
+      const downloadUrl = window.URL.createObjectURL(zipBlob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = downloadUrl;
+      downloadLink.download = filename;
+      downloadLink.style.display = 'none';
+      
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      console.log('Export completed successfully!');
+      
+      // Show success message
+      alert(`İhracat başarılı! ${logsToExport.length} kayıt indirildi.`);
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata oluştu';
+      alert(`İndirme hatası: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   useEffect(() => {
     if (status === 'authenticated') {
       fetchData();
@@ -299,7 +500,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -323,28 +524,8 @@ export default function Dashboard() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Errors</p>
-                <p className="text-3xl font-bold text-red-600">{stats.error.toLocaleString()}</p>
-              </div>
-              <XCircle className="h-8 w-8 text-red-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-3xl font-bold text-yellow-600">{stats.pending.toLocaleString()}</p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="text-sm font-medium text-gray-600">Avg Response</p>
-                <p className="text-3xl font-bold text-purple-600">{stats.avgResponseTime}ms</p>
+                <p className="text-3xl font-bold text-purple-600 truncate w-60">{stats.avgResponseTime}ms</p>
               </div>
               <AlertCircle className="h-8 w-8 text-purple-500" />
             </div>
@@ -368,11 +549,10 @@ export default function Dashboard() {
                   </span>
                   <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      showFilters 
-                        ? 'bg-blue-100 text-blue-700' 
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${showFilters
+                        ? 'bg-blue-100 text-blue-700'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     <Filter className="h-4 w-4" />
                     <span>Filters</span>
@@ -403,7 +583,7 @@ export default function Dashboard() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Search in prompts/responses..."
+                      placeholder="Prompts"
                       value={filters.searchText}
                       onChange={(e) => handleFilterChange('searchText', e.target.value)}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -447,7 +627,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Dropdown Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                   {/* Appliance Filter */}
                   <select
                     value={filters.applianceId}
@@ -483,15 +663,77 @@ export default function Dashboard() {
                       <option key={home} value={home}>{home}</option>
                     ))}
                   </select>
+                </div>
 
-                  {/* SKU Filter */}
-                  <input
-                    type="text"
-                    placeholder="SKU Number"
-                    value={filters.skuNumber}
-                    onChange={(e) => handleFilterChange('skuNumber', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                {/* New Filter Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                  {/* Session ID */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Session ID"
+                      value={filters.sessionId || ''}
+                      onChange={(e) => handleFilterChange('sessionId', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Request ID */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Request ID"
+                      value={filters.requestId || ''}
+                      onChange={(e) => handleFilterChange('requestId', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Response Search */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Responses"
+                      value={filters.responseSearch || ''}
+                      onChange={(e) => handleFilterChange('responseSearch', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* SKU Number */}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="SKU Number"
+                      value={filters.skuNumber || ''}
+                      onChange={(e) => handleFilterChange('skuNumber', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Response Time Range */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">Min (ms)</span>
+                    <input
+                      type="number"
+                      // placeholder="Min response time"
+                      value={filters.minResponseTime || ''}
+                      onChange={(e) => handleFilterChange('minResponseTime', e.target.value)}
+                      className="w-full pl-20 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">Max (ms)</span>
+                    <input
+                      type="number"
+                      // placeholder="Max response time"
+                      value={filters.maxResponseTime || ''}
+                      onChange={(e) => handleFilterChange('maxResponseTime', e.target.value)}
+                      className="w-full pl-20 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
 
                 {/* Active Filters and Clear All */}
@@ -546,13 +788,13 @@ export default function Dashboard() {
                         <div className="flex-1 min-w-0">
                           {/* Main Content */}
                           <div className="mb-3">
-                            <h4 className="text-lg font-medium text-gray-900 mb-2 leading-tight">
+                            <h4 className="text-lg font-medium text-gray-900 mb-2">
                               {log.prompt}
                             </h4>
 
                             {log.response && (
-                              <div className="bg-white rounded-lg p-3 border border-gray-200">
-                                <p className="text-gray-700 text-sm leading-relaxed">
+                              <div className="px-2 py-3">
+                                <p className="text-gray-800 text-sm leading-relaxed">
                                   {log.response.substring(0, 150)}
                                   {log.response.length > 150 && (
                                     <span className="text-blue-500 cursor-pointer hover:underline ml-1">
@@ -567,35 +809,45 @@ export default function Dashboard() {
                           {/* Metadata Tags */}
                           <div className="flex flex-wrap gap-2 mb-3">
                             {log.applianceId && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                📱 {log.applianceId}
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full  bg-purple-100">
+                                <span className="text-xs text-gray-600">Appliance ID:</span>
+                                <span className="text-xs text-purple-800 ">{log.applianceId}</span>
                               </span>
                             )}
 
                             {log.skuNumber && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                                🏷️ {log.skuNumber}
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 ">
+                                <span className="text-xs text-gray-600">Sku Number:</span>
+                                <span className="text-xs text-orange-700 ">{log.skuNumber}</span>
                               </span>
                             )}
 
                             {log.deviceUDID && (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                🔗 Device Connected
+                                <span className="text-xs text-gray-600">Device UDID:</span>
+                                <span className="text-xs text-green-800 ">{log.deviceUDID}</span>
                               </span>
                             )}
 
                             {log.homeId && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                🏠 {log.homeId}
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                <span className="text-xs text-gray-600">Home ID:</span>
+                                <span className="text-xs text-blue-800 ">{log.homeId}</span>
+                              </span>
+                            )}
+                            {log.sessionId && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span className="text-xs text-gray-600">Session ID:</span>
+                                <span className="text-xs text-green-800 ">{log.sessionId}</span>
                               </span>
                             )}
                           </div>
 
                           {/* Footer Info */}
                           <div className="flex items-center justify-between text-xs text-gray-500">
-                            <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-4 ml-1 mt-2">
                               <span className="flex items-center">
-                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="darkgreen" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 {new Date(log.timestamp).toLocaleDateString('tr-TR', {
@@ -608,7 +860,7 @@ export default function Dashboard() {
 
                               {log.responseTime && (
                                 <span className="flex items-center">
-                                  <div className={`w-2 h-2 rounded-full mr-1 ${log.responseTime < 1000 ? 'bg-green-400' : log.responseTime < 3000 ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
+                                  <div className={`w-3 h-3 rounded-full mr-1 ${log.responseTime < 1000 ? 'bg-green-400' : log.responseTime < 3000 ? 'bg-yellow-400' : 'bg-red-400'}`}></div>
                                   {log.responseTime}ms
                                 </span>
                               )}
@@ -625,12 +877,12 @@ export default function Dashboard() {
                 <div className="text-center py-16">
                   <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-5a2 2 0 00-2-2h-2m-1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <h4 className="text-lg font-medium text-gray-900 mb-2">No activity found</h4>
                   <p className="text-gray-500 max-w-sm mx-auto">
-                    {getActiveFilterCount() > 0 
+                    {getActiveFilterCount() > 0
                       ? 'Try adjusting your filters to see more results.'
                       : 'Your recent interactions will appear here. Start using the system to see your activity log.'
                     }
@@ -758,10 +1010,10 @@ export default function Dashboard() {
                 </span>
               </div>
               <div className="flex items-center space-x-2">
-                <button className="px-3 py-1.5 text-sm bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">
+                <button onClick={()=>handleFilterLongs()} className="px-3 py-1.5 text-sm bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">
                   Export Results
                 </button>
-                <button 
+                <button
                   onClick={clearAllFilters}
                   className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >

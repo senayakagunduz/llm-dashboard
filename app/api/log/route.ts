@@ -39,7 +39,10 @@ export async function POST(req: Request) {
     } = body;
 
     if (!requestId) {
-      return new Response(JSON.stringify({ error: 'Request ID is required' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Request ID is required' }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     try {
@@ -60,10 +63,7 @@ export async function POST(req: Request) {
       } else {
         // Create new log
         if (!prompt) {
-          return new Response(JSON.stringify({ 
-            success: false, 
-            error: 'Prompt is required for new logs' 
-          }), { 
+          return new Response(JSON.stringify({ error: 'Prompt is required for new logs' }), { 
             status: 400,
             headers: { 'Content-Type': 'application/json' }
           });
@@ -84,22 +84,11 @@ export async function POST(req: Request) {
       }
 
       await log.save();
-
-      return new Response(JSON.stringify({ 
-        success: true, 
-        data: log 
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return new Response(null, { status: 200 });
     } catch (dbError) {
       console.error('Database error:', dbError);
       const errorMessage = dbError instanceof Error ? dbError.message : 'Unknown database error';
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Failed to save log',
-        details: errorMessage
-      }), { 
+      return new Response(JSON.stringify({ error: 'Database error: ' + errorMessage }), { 
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -107,9 +96,6 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error('Error saving log:', error);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: 'Failed to save log' 
-    }), { status: 500 });
+    return new Response(null, { status: 500 });
   }
 }
