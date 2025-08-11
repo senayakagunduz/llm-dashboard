@@ -21,7 +21,7 @@ if (!cached) {
 }
 
 export const connectDB = async () => {
-  // Client-side'da çalışmasını engelle
+  // don't allow on client side
   if (typeof window !== 'undefined') {
     return;
   }

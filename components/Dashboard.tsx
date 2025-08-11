@@ -57,7 +57,7 @@ export default function Dashboard() {
 
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: 5,
     total: 0,
     pages: 0
   });
@@ -82,11 +82,11 @@ export default function Dashboard() {
   });
 
   // Unique values for dropdowns
-  const [uniqueValues, setUniqueValues] = useState({
-    appliances: [] as string[],
-    devices: [] as string[],
-    homes: [] as string[],
-    skus: [] as string[]
+  const [uniqueValues, setUniqueValues] = useState<UniqueValues>({
+    appliances: [],
+    devices: [],
+    homes: [],
+    skus: []
   });
 
   // Debounce search
@@ -122,8 +122,7 @@ export default function Dashboard() {
 
     setFilters(prev => ({ ...prev, startDate, endDate }));
   };
-
-  // Build query parameters
+//added pagination parameters to buildQueryParams function (for sending parameters from the api to get wanted page data)
   const buildQueryParams = useCallback((currentFilters: Filters, page: number = 1) => {
     const params = new URLSearchParams();
     params.append('page', page.toString());
@@ -138,7 +137,7 @@ export default function Dashboard() {
     return params.toString();
   }, [pagination.limit]);
 
-  // Fetch logs with filters
+  // Fetch logs with filters and pagination then Bu parametreler API'ye gönderilerek sadece istenen sayfadaki verilerin getirilmesi sağlanıyor.
   const fetchData = useCallback(async (currentFilters: Filters = filters, page: number = 1) => {
     if (status !== 'authenticated') return;
 
@@ -161,6 +160,7 @@ export default function Dashboard() {
         }
 
         setLogs(filteredLogs);
+        //Update pagination data
         setPagination(data.pagination || pagination);
         setStats({
           total: data.stats?.total || 0,
@@ -463,11 +463,11 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex justify-between items-center">
-            <div>
+          <div className="flex flex-col md:flex-row justify-center md:justify-between items-center text-center md:text-left">
+            <div className="flex flex-col md:flex-row items-center justify-center gap-4">
               <h1 className="text-3xl font-bold text-gray-900">LLM Monitoring Dashboard</h1>
-              <div className="flex items-center gap-4">
-                <p className="text-gray-600 mt-2">Welcome back, {session?.user?.name}</p>
+              <div className="flex justify-center items-center gap-4 mt-2">
+                <p className="flex justify-center items-center text-gray-600 ">Welcome back, {session?.user?.name}</p>
               </div>
             </div>
 
@@ -481,7 +481,7 @@ export default function Dashboard() {
                 <span className="hidden md:inline font-medium">Admin Panel</span>
               </Link>
             )}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
               <div className="flex items-center gap-2 text-gray-600">
                 <UserCircle2 className="h-5 w-5" />
                 <span>{session?.user?.email}</span>
@@ -538,12 +538,12 @@ export default function Dashboard() {
           <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
             {/* Header with Filter Toggle */}
             <div className="px-6 py-5 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
+              <div className="flex flex-col md:flex-row items-center justify-between">
+                <div className="flex  items-center space-x-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                   <h3 className="text-xl font-semibold text-gray-800">Recent Activity</h3>
                 </div>
-                <div className="flex items-center space-x-3">
+                <div className="flex flex-col md:flex-row items-center space-x-3">
                   <span className="text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
                     {logs.length} entries
                   </span>
@@ -776,8 +776,8 @@ export default function Dashboard() {
               ) : logs.length > 0 ? (
                 <div className="space-y-4">
                   {logs.map((log, index) => (
-                    <div key={log._id} className="group bg-gray-50 hover:bg-blue-50 rounded-xl p-5 border border-transparent hover:border-blue-200 transition-all duration-200">
-                      <div className="flex items-start space-x-4">
+                    <div key={log._id} className="flex flex-wrap group bg-gray-50 hover:bg-blue-50 rounded-xl p-5 border border-transparent hover:border-blue-200 transition-all duration-200">
+                      <div className="flex flex-col md:flex-row items-start space-x-4">
                         {/* Activity Icon */}
                         <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                           <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -788,13 +788,13 @@ export default function Dashboard() {
                         <div className="flex-1 min-w-0">
                           {/* Main Content */}
                           <div className="mb-3">
-                            <h4 className="text-lg font-medium text-gray-900 mb-2">
+                            <h4 className="text-xs md:text-lg font-medium text-gray-900 mb-2">
                               {log.prompt}
                             </h4>
 
                             {log.response && (
                               <div className="px-2 py-3">
-                                <p className="text-gray-800 text-sm leading-relaxed">
+                                <p className="text-gray-800 text-xs md:text-sm leading-relaxed">
                                   {log.response.substring(0, 150)}
                                   {log.response.length > 150 && (
                                     <span className="text-blue-500 cursor-pointer hover:underline ml-1">
@@ -807,38 +807,38 @@ export default function Dashboard() {
                           </div>
 
                           {/* Metadata Tags */}
-                          <div className="flex flex-wrap gap-2 mb-3">
+                          <div className="flex flex-col md:flex-row flex-wrap text-xs md:text-sm gap-2 mb-3">
                             {log.applianceId && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full  bg-purple-100">
-                                <span className="text-xs text-gray-600">Appliance ID:</span>
-                                <span className="text-xs text-purple-800 ">{log.applianceId}</span>
+                              <span className="text-[.70rem] sm:text-sm inline-flex flex-wrap items-center px-2.5 py-1 rounded-full  bg-purple-100">
+                                <span className="text-gray-600">Appliance ID:</span>
+                                <span className="text-purple-800 ">{log.applianceId}</span>
                               </span>
                             )}
 
                             {log.skuNumber && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 ">
-                                <span className="text-xs text-gray-600">Sku Number:</span>
-                                <span className="text-xs text-orange-700 ">{log.skuNumber}</span>
+                              <span className="text-[.70rem] sm:text-sminline-flex flex-wrap items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 ">
+                                <span className="text-gray-600">Sku Number:</span>
+                                <span className="text-orange-700 ">{log.skuNumber}</span>
                               </span>
                             )}
 
                             {log.deviceUDID && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <span className="text-xs text-gray-600">Device UDID:</span>
-                                <span className="text-xs text-green-800 ">{log.deviceUDID}</span>
+                              <span className="text-[.70rem] sm:text-sm inline-flex flex-wrap items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span className=" text-gray-600">Device UDID:</span>
+                                <span className=" text-green-800 ">{log.deviceUDID}</span>
                               </span>
                             )}
 
                             {log.homeId && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                                <span className="text-xs text-gray-600">Home ID:</span>
-                                <span className="text-xs text-blue-800 ">{log.homeId}</span>
+                              <span className="text-[.70rem] sm:text-sm inline-flex flex-wrap items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                <span className=" text-gray-600">Home ID:</span>
+                                <span className=" text-blue-800 ">{log.homeId}</span>
                               </span>
                             )}
                             {log.sessionId && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                <span className="text-xs text-gray-600">Session ID:</span>
-                                <span className="text-xs text-green-800 ">{log.sessionId}</span>
+                              <span className="text-[.60rem] sm:text-sminline-flex flex-wrap items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <span className="text-gray-600">Session ID:</span>
+                                <span className="text-green-800 ">{log.sessionId}</span>
                               </span>
                             )}
                           </div>
@@ -891,32 +891,56 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Pagination */}
+            {/* Pagination component */}
             {pagination.pages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-100 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-700">
-                    Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+              <div className="flex items-center justify-between mt-6 px-2">
+                <div className="text-sm text-gray-500">
+                  Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> logs
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => fetchData(filters, pagination.page - 1)}
+                    disabled={pagination.page === 1}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                      // Calculate page numbers to show (current page in the middle when possible)
+                      let pageNum;
+                      if (pagination.pages <= 5) {
+                        pageNum = i + 1;
+                      } else if (pagination.page <= 3) {
+                        pageNum = i + 1;
+                      } else if (pagination.page > pagination.pages - 3) {
+                        pageNum = pagination.pages - 4 + i;
+                      } else {
+                        pageNum = pagination.page - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => fetchData(filters, pageNum)}
+                          className={`w-10 h-10 flex items-center justify-center rounded-md text-sm font-medium ${
+                            pagination.page === pageNum
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => fetchData(filters, pagination.page - 1)}
-                      disabled={pagination.page === 1}
-                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    <span className="px-3 py-1 text-sm">
-                      Page {pagination.page} of {pagination.pages}
-                    </span>
-                    <button
-                      onClick={() => fetchData(filters, pagination.page + 1)}
-                      disabled={pagination.page === pagination.pages}
-                      className="px-3 py-1 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => fetchData(filters, pagination.page + 1)}
+                    disabled={pagination.page >= pagination.pages}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
             )}

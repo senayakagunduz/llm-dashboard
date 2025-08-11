@@ -1,6 +1,6 @@
 import { NextAuthOptions, DefaultSession } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs'; // Bu import'u ekleyin
+import bcrypt from 'bcryptjs'; 
 import { connectDB } from './db';
 import User from '../models/User';
 
@@ -73,8 +73,8 @@ export const authOptions: NextAuthOptions = {
           return {
             id: user._id.toString(),
             email: user.email,
-            name: user.fullname, // user.name yerine user.fullname
-            role: user.role || 'user', // Default role
+            name: user.fullname,
+            role: user.role || 'user',
           };
         } catch (error) {
           console.error('Authentication error:', error);
