@@ -816,7 +816,7 @@ export default function Dashboard() {
                             )}
 
                             {log.skuNumber && (
-                              <span className="text-[.70rem] sm:text-sminline-flex flex-wrap items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 ">
+                              <span className="text-[.70rem] sm:text-sm inline-flex flex-wrap items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 ">
                                 <span className="text-gray-600">Sku Number:</span>
                                 <span className="text-orange-700 ">{log.skuNumber}</span>
                               </span>
@@ -836,7 +836,7 @@ export default function Dashboard() {
                               </span>
                             )}
                             {log.sessionId && (
-                              <span className="text-[.60rem] sm:text-sminline-flex flex-wrap items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <span className="text-[.70rem] sm:text-sm inline-flex flex-wrap items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 <span className="text-gray-600">Session ID:</span>
                                 <span className="text-green-800 ">{log.sessionId}</span>
                               </span>
