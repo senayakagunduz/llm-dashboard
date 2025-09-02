@@ -7,7 +7,7 @@ import { User, Plus, Edit, Trash2, Loader2, Home, RotateCcw } from 'lucide-react
 
 interface User {
   _id: string;
-  fullname: string; // Changed from 'name' to 'fullname'
+  fullname: string; 
   email: string;
   role: 'user' | 'admin';
   isActive?: boolean;

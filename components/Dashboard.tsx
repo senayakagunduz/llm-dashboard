@@ -488,8 +488,11 @@ export default function Dashboard() {
               </div>
               <button
                 onClick={async () => {
-                  await signOut({ callbackUrl: '/signin' });
-                  router.push('/signin');
+                  const baseUrl = process.env.NEXTAUTH_URL || window.location.origin;
+                  await signOut({
+                    callbackUrl: `${baseUrl}/signin`,
+                    redirect: true
+                  });
                 }}
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
               >
@@ -781,7 +784,7 @@ export default function Dashboard() {
                         {/* Activity Icon */}
                         <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                           <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-2.747-.426l-2.123.707c-.396.132-.795.044-1.09-.251a.97.97 0 01-.251-1.09l.707-2.123A8.955 8.955 0 013 12C3 7.582 6.582 4 12 4s9 3.582 9 8z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.418-3.582 8-8 8a8.955 8.955 0 01-2.747-.426l-2.123.707c-.396.132-.795.044-1.09-.251a.97.97 0 01-.251-1.09l.707-2.123A8.955 8.955 0 013 12C3 7.582 6.582 4 12 4s9 3.582 9 8z" />
                           </svg>
                         </div>
 
@@ -850,11 +853,14 @@ export default function Dashboard() {
                                 <svg className="w-4 h-4 mr-1" fill="none" stroke="darkgreen" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                {new Date(log.timestamp).toLocaleDateString('tr-TR', {
+                                {new Date(log.timestamp).toLocaleString('en-EN', {
+                                  timeZone: 'Europe/Istanbul',
                                   day: 'numeric',
                                   month: 'short',
+                                  year: 'numeric',
                                   hour: '2-digit',
-                                  minute: '2-digit'
+                                  minute: '2-digit',
+                                  hour12: false
                                 })}
                               </span>
 
@@ -893,7 +899,7 @@ export default function Dashboard() {
 
             {/* Pagination component */}
             {pagination.pages > 1 && (
-              <div className="flex items-center justify-between mt-6 px-2">
+              <div className="flex items-center justify-between mt-6 mb-4 px-2">
                 <div className="text-sm text-gray-500">
                   Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> logs
                 </div>
