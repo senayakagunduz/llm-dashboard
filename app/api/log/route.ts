@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       response,
       skuNumber,
       responseTime,
-      timestamp,
+      timestamp = new Date().toISOString(), // Add current timestamp if not provided
     } = body;
 
     if (!requestId) {

@@ -488,7 +488,7 @@ export default function Dashboard() {
               </div>
               <button
                 onClick={async () => {
-                  const baseUrl = process.env.NEXTAUTH_URL || window.location.origin;
+                  const baseUrl = process.env.NEXT_PUBLIC_NEXTAUTH_URL || window.location.origin;
                   await signOut({
                     callbackUrl: `${baseUrl}/signin`,
                     redirect: true
