@@ -899,19 +899,19 @@ export default function Dashboard() {
 
             {/* Pagination component */}
             {pagination.pages > 1 && (
-              <div className="flex items-center justify-between mt-6 mb-4 px-2">
-                <div className="text-sm text-gray-500">
+              <div className="flex flex-wrap justify-between items-center mt-6 mb-4 px-2">
+                <div className="flex flex-wrap text-sm mb-2 text-gray-500">
                   Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> logs
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex text-lg lg:text-2xl space-x-2">
                   <button
                     onClick={() => fetchData(filters, pagination.page - 1)}
                     disabled={pagination.page === 1}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-2 py-1 lg:px-4 lg:py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Previous
                   </button>
-                  <div className="flex items-center space-x-1">
+                  <div className="flex text-md lg:text-2xl items-center space-x-1">
                     {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
                       // Calculate page numbers to show (current page in the middle when possible)
                       let pageNum;
