@@ -901,7 +901,7 @@ export default function Dashboard() {
             {pagination.pages > 1 && (
               <div className="flex flex-wrap justify-between items-center mt-6 mb-4 px-2">
                 <div className="flex flex-wrap text-sm mb-2 text-gray-500">
-                  Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> logs
+                  Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> &nbsp;logs
                 </div>
                 <div className="flex text-lg lg:text-2xl space-x-2">
                   <button
