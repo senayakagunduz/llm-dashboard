@@ -62,13 +62,21 @@ export async function GET(req: Request) {
     if (startDate || endDate) {
       query.timestamp = {};
       if (startDate) {
-        query.timestamp.$gte = new Date(startDate);
+        // Create a new date at the start of the day (00:00:00) in local time
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.timestamp.$gte = start;
       }
       if (endDate) {
-        const endOfDay = new Date(endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        query.timestamp.$lte = endOfDay;
+        // Create a new date at the end of the day (23:59:59.999) in local time
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.timestamp.$lte = end;
       }
+      console.log('Date range query:', {
+        startDate: startDate ? query.timestamp.$gte : 'Not set',
+        endDate: endDate ? query.timestamp.$lte : 'Not set'
+      });
     }
 
     console.log('Query:', JSON.stringify(query, null, 2));
