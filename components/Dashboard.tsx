@@ -9,8 +9,6 @@ import JSZip from 'jszip';
 interface Stats {
   total: number;
   completed: number;
-  error: number;
-  pending: number;
   avgResponseTime: number;
 }
 
@@ -46,9 +44,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats>({
     total: 0,
     completed: 0,
-    error: 0,
-    pending: 0,
-    avgResponseTime: 0
+     avgResponseTime: 0
   });
 
   const [logs, setLogs] = useState<any[]>([]);
@@ -105,12 +101,12 @@ export default function Dashboard() {
     let startDate = '';
     let endDate = '';
 
-    // Türkiye saatine göre tarih formatlama
+    // Format Turkey time
     const formatDate = (date: Date) => {
       return date.toISOString().split('T')[0];
     };
     const getTurkeyDate = (date: Date) => {
-      // UTC'den Türkiye saatine çevir (+3 saat)
+      // UTC to Turkey time (+3 hours)
       const turkishDate = new Date(date);
       turkishDate.setHours(turkishDate.getHours() + 3);
       return turkishDate;
@@ -143,9 +139,9 @@ export default function Dashboard() {
     }
 
     setFilters(prev => ({ ...prev, startDate, endDate }));
-    // Sayfayı 1'e sıfırla ve verileri yeniden çek
+    // Reset page to 1 and fetch data again
     setPagination(prev => ({ ...prev, page: 1 }));
-    // fetchData fonksiyonunu çağırarak yeni filtrelerle verileri güncelle
+    // fetchData function to update data with new filters
     fetchData({ ...filters, startDate, endDate }, 1);
 
   };
@@ -165,7 +161,7 @@ export default function Dashboard() {
   }, [pagination.limit]);
 
   // Fetch logs with filters and pagination 
-  // Bu parametreler API'ye gönderilerek sadece istenen sayfadaki verilerin getirilmesi sağlanıyor.
+  // These parameters are sent to the API to fetch only the data for the desired page.
   const fetchData = useCallback(async (currentFilters: Filters = filters, page: number = 1) => {
     if (status !== 'authenticated') return;
 
@@ -194,8 +190,6 @@ export default function Dashboard() {
         setStats({
           total: data.stats?.total || 0,
           completed: data.stats?.completed || 0,
-          error: data.stats?.error || 0,
-          pending: data.stats?.pending || 0,
           avgResponseTime: Math.round(data.stats?.avgResponseTime || 0)
         });
 
@@ -403,24 +397,24 @@ export default function Dashboard() {
 
       // Add summary file
       const summaryContent = `
-  Veri İhracat Özeti
+  Data Export Summary
   ==================
-  İhracat Tarihi: ${new Date().toLocaleString('tr-TR')}
-  İhracat Eden: ${session?.user?.email || 'Bilinmeyen Kullanıcı'}
-  Toplam Kayıt: ${logsToExport.length}
+  Export Date: ${new Date().toLocaleString('tr-TR')}
+  Exported By: ${session?.user?.email || 'Unknown User'}
+  Total Records: ${logsToExport.length}
   
   Uygulanan Filtreler:
   ${Object.entries(filters)
           .filter(([key, value]) => value && value !== '')
           .map(([key, value]) => `- ${key}: ${value}`)
-          .join('\n') || 'Filtre uygulanmadı'}
+          .join('\n') || 'No filters applied'}
   
-  İhracat Dosyaları:
-  - filtered_logs.json: Ana veri dosyası (JSON formatında)
-  - summary.txt: Bu özet dosyası
+  Export Files:
+  - filtered_logs.json: Main data file (JSON format)
+  - summary.txt: This summary file
   
-  Kullanım Notu:
-  JSON dosyasını Excel'de açmak için "Veri > JSON'dan" seçeneğini kullanabilirsiniz.
+  Usage Note:
+  You can open the JSON file in Excel using "Data > From JSON" option.
       `.trim();
 
       zip.file('summary.txt', summaryContent);
@@ -927,106 +921,6 @@ export default function Dashboard() {
             </div>
 
             {/* Pagination component */}
-            {/* {logs.length >= pagination.limit ? ( */}
-            {/* {!filters.searchText &&pagination.pages > 1 ? (
-              <div className="flex flex-wrap justify-between items-center mt-6 mb-4 px-2">
-                <div className="flex flex-wrap text-sm mb-2 text-gray-500">
-                  Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> &nbsp;logs
-                </div>
-                <div className="flex flex-wrap text-sm mb-2 text-gray-500">Filtered &nbsp;{logs.length} Logs</div>
-                <div className="flex text-lg lg:text-2xl space-x-2">
-                  <button
-                    onClick={() => fetchData(filters, pagination.page - 1)}
-                    disabled={pagination.page === 1}
-                    className="px-2 py-1 lg:px-4 lg:py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <div className="flex text-md lg:text-2xl items-center space-x-1">
-                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                      // Calculate page numbers to show (current page in the middle when possible)
-                      let pageNum;
-                      if (pagination.pages <= 5) {
-                        pageNum = i + 1;
-                      } else if (pagination.page <= 3) {
-                        pageNum = i + 1;
-                      } else if (pagination.page > pagination.pages - 3) {
-                        pageNum = pagination.pages - 4 + i;
-                      } else {
-                        pageNum = pagination.page - 2 + i;
-                      }
-
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => fetchData(filters, pageNum)}
-                          className={`w-10 h-10 flex items-center justify-center rounded-md text-sm font-medium ${pagination.page === pageNum
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <button
-                    onClick={() => fetchData(filters, pagination.page + 1)}
-                    disabled={pagination.page >= pagination.pages}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>)
-              : logs.length > 0 ? (<div className='flex items-center justify-between mb-2 mx-3'>
-                <span className="text-sm text-gray-500 ">{logs.length} logs found</span>
-                <div className="flex text-lg lg:text-2xl space-x-2">
-                  <button
-                    onClick={() => fetchData(filters, pagination.page - 1)}
-                    disabled={pagination.page === 1}
-                    className="px-2 py-1 lg:px-4 lg:py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <div className="flex text-md lg:text-2xl items-center space-x-1">
-                    {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                      // Calculate page numbers to show (current page in the middle when possible)
-                      let pageNum;
-                      if (pagination.pages <= 5) {
-                        pageNum = i + 1;
-                      } else if (pagination.page <= 3) {
-                        pageNum = i + 1;
-                      } else if (pagination.page > pagination.pages - 3) {
-                        pageNum = pagination.pages - 4 + i;
-                      } else {
-                        pageNum = pagination.page - 2 + i;
-                      }
-
-                      return (
-                        <button
-                          key={pageNum}
-                          disabled={pagination.page === pageNum}
-                          onClick={() => fetchData(filters, pageNum)}
-                          className={`w-10 h-10 flex items-center justify-center rounded-md text-sm font-medium ${pagination.page === pageNum
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-700 hover:bg-gray-100'
-                            }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <button
-                    onClick={() => fetchData(filters, pagination.page + 1)}
-                    disabled={pagination.page >= pagination.pages}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div></div>) : null
-            } */}
             {!filters.searchText && pagination.pages > 1 ? (
               <div className="flex flex-wrap justify-between items-center mt-6 mb-4 px-2">
                 <div className="flex flex-wrap text-sm mb-2 text-gray-500">

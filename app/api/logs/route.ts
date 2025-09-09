@@ -139,9 +139,9 @@ export async function GET(req: Request) {
     let stats = {
       total: 0,
       completed: 0,
-      pending: 0,
-      error: 0,
-      avgResponseTime: 0
+      // pending: 0,
+      // error: 0,
+      // avgResponseTime: 0
     };
 
     if (!isExport || total < 10000) {
