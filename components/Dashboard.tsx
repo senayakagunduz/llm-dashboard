@@ -9,6 +9,8 @@ import JSZip from 'jszip';
 interface Stats {
   total: number;
   completed: number;
+  error: number;
+  pending: number;
   avgResponseTime: number;
 }
 
@@ -36,6 +38,7 @@ interface Filters {
   status?: string;
   promptSearch: string;
   responseSearch: string;
+  page?:number;
 }
 
 export default function Dashboard() {
@@ -44,12 +47,15 @@ export default function Dashboard() {
   const [stats, setStats] = useState<Stats>({
     total: 0,
     completed: 0,
-     avgResponseTime: 0
+    error: 0,
+    pending: 0,
+    avgResponseTime: 0
   });
 
   const [logs, setLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [isExpanded, setIsExpanded] = useState<Record<string,boolean>>({});
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -75,6 +81,7 @@ export default function Dashboard() {
     status: '',
     promptSearch: '',
     responseSearch: '',
+    page:1
   });
 
   // Unique values for dropdowns
@@ -96,17 +103,20 @@ export default function Dashboard() {
     { label: 'This month', value: 'month' }
   ];
 
+  const toggleExpand = (logId:string) => {
+    setIsExpanded(prev=>({...prev, [logId]: !prev[logId]}));
+  }
   const applyDatePreset = async (preset: string) => {
     const now = new Date();
     let startDate = '';
     let endDate = '';
 
-    // Format Turkey time
+    // Türkiye saatine göre tarih formatlama
     const formatDate = (date: Date) => {
       return date.toISOString().split('T')[0];
     };
     const getTurkeyDate = (date: Date) => {
-      // UTC to Turkey time (+3 hours)
+      // UTC'den Türkiye saatine çevir (+3 saat)
       const turkishDate = new Date(date);
       turkishDate.setHours(turkishDate.getHours() + 3);
       return turkishDate;
@@ -139,9 +149,9 @@ export default function Dashboard() {
     }
 
     setFilters(prev => ({ ...prev, startDate, endDate }));
-    // Reset page to 1 and fetch data again
+    // Sayfayı 1'e sıfırla ve verileri yeniden çek
     setPagination(prev => ({ ...prev, page: 1 }));
-    // fetchData function to update data with new filters
+    // fetchData fonksiyonunu çağırarak yeni filtrelerle verileri güncelle
     fetchData({ ...filters, startDate, endDate }, 1);
 
   };
@@ -151,8 +161,9 @@ export default function Dashboard() {
     params.append('page', page.toString());
     params.append('limit', pagination.limit.toString());
 
+    // Include all filters in the query params
     Object.entries(currentFilters).forEach(([key, value]) => {
-      if (value && key !== 'searchText') {
+      if (value) {
         params.append(key, value);
       }
     });
@@ -161,7 +172,7 @@ export default function Dashboard() {
   }, [pagination.limit]);
 
   // Fetch logs with filters and pagination 
-  // These parameters are sent to the API to fetch only the data for the desired page.
+  // Bu parametreler API'ye gönderilerek sadece istenen sayfadaki verilerin getirilmesi sağlanıyor.
   const fetchData = useCallback(async (currentFilters: Filters = filters, page: number = 1) => {
     if (status !== 'authenticated') return;
 
@@ -172,28 +183,17 @@ export default function Dashboard() {
       const data = await response.json();
 
       if (data.success) {
-        let filteredLogs = data.data;
-
-        // Client-side search filter for prompt/response
-        if (currentFilters.searchText) {
-          const searchLower = currentFilters.searchText.toLowerCase();
-          filteredLogs = filteredLogs.filter((log: any) =>
-            log.prompt?.toLowerCase().includes(searchLower) ||
-            log.response?.toLowerCase().includes(searchLower)
-          );
-        }
-
-        setLogs(filteredLogs);
-        console.log("filteredLogs", filteredLogs);
-        //Update pagination data
+        setLogs(data.data);
         setPagination(data.pagination || pagination);
         setStats({
-          total: data.stats?.total || 0,
+          total: data.pagination?.total || 0,
           completed: data.stats?.completed || 0,
+          error: data.stats?.error || 0,
+          pending: data.stats?.pending || 0,
           avgResponseTime: Math.round(data.stats?.avgResponseTime || 0)
         });
 
-        // Extract unique values for dropdowns
+        // Update unique values for dropdowns
         const appliances = [...new Set(data.data.map((log: any) => log.applianceId).filter(Boolean))] as string[];
         const devices = [...new Set(data.data.map((log: any) => log.deviceUDID).filter(Boolean))] as string[];
         const homes = [...new Set(data.data.map((log: any) => log.homeId).filter(Boolean))] as string[];
@@ -213,14 +213,17 @@ export default function Dashboard() {
     const newFilters = { ...filters, [key]: value };
     setFilters(newFilters);
 
+    // Reset to first page when filters change
+    setPagination(prev => ({ ...prev, page: 1 }));
+
     if (key === 'searchText') {
       if (searchTimeout) clearTimeout(searchTimeout);
       const timeout = setTimeout(() => {
-        fetchData(newFilters);
+        fetchData({ ...newFilters, page: 1 });
       }, 500);
       setSearchTimeout(timeout);
     } else {
-      fetchData(newFilters);
+      fetchData({ ...newFilters, page: 1 });
     }
   };
 
@@ -249,7 +252,7 @@ export default function Dashboard() {
       requestId: '',
       status: '',
       promptSearch: '',
-      responseSearch: ''
+      responseSearch: '',
     };
     setFilters(emptyFilters);
     fetchData(emptyFilters);
@@ -397,24 +400,24 @@ export default function Dashboard() {
 
       // Add summary file
       const summaryContent = `
-  Data Export Summary
+  Veri İhracat Özeti
   ==================
-  Export Date: ${new Date().toLocaleString('tr-TR')}
-  Exported By: ${session?.user?.email || 'Unknown User'}
-  Total Records: ${logsToExport.length}
+  İhracat Tarihi: ${new Date().toLocaleString('tr-TR')}
+  İhracat Eden: ${session?.user?.email || 'Bilinmeyen Kullanıcı'}
+  Toplam Kayıt: ${logsToExport.length}
   
   Uygulanan Filtreler:
   ${Object.entries(filters)
           .filter(([key, value]) => value && value !== '')
           .map(([key, value]) => `- ${key}: ${value}`)
-          .join('\n') || 'No filters applied'}
+          .join('\n') || 'Filtre uygulanmadı'}
   
-  Export Files:
-  - filtered_logs.json: Main data file (JSON format)
-  - summary.txt: This summary file
+  İhracat Dosyaları:
+  - filtered_logs.json: Ana veri dosyası (JSON formatında)
+  - summary.txt: Bu özet dosyası
   
-  Usage Note:
-  You can open the JSON file in Excel using "Data > From JSON" option.
+  Kullanım Notu:
+  JSON dosyasını Excel'de açmak için "Veri > JSON'dan" seçeneğini kullanabilirsiniz.
       `.trim();
 
       zip.file('summary.txt', summaryContent);
@@ -821,10 +824,10 @@ export default function Dashboard() {
                             {log.response && (
                               <div className="px-2 py-3">
                                 <p className="text-gray-800 text-xs md:text-sm leading-relaxed">
-                                  {log.response.substring(0, 150)}
+                                {isExpanded[log._id] ? log.response : log.response.substring(0, 150)}
                                   {log.response.length > 150 && (
-                                    <span className="text-blue-500 cursor-pointer hover:underline ml-1">
-                                      read more
+                                    <span className="text-blue-500 cursor-pointer hover:underline ml-1" onClick={(e)=>{e.stopPropagation();toggleExpand(log._id);}}>
+                                       {isExpanded[log._id] ? 'less show' : 'read more'}
                                     </span>
                                   )}
                                 </p>

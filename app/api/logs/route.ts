@@ -19,8 +19,7 @@ export async function GET(req: Request) {
     const endDate = url.searchParams.get('endDate');
     const sessionId = url.searchParams.get('sessionId');
     const requestId = url.searchParams.get('requestId');
-    const promptSearch = url.searchParams.get('promptSearch');
-    const responseSearch = url.searchParams.get('responseSearch');
+    const searchText = url.searchParams.get('searchText');
     const status = url.searchParams.get('status');
     const minResponseTime = url.searchParams.get('minResponseTime');
     const maxResponseTime = url.searchParams.get('maxResponseTime');
@@ -40,11 +39,11 @@ export async function GET(req: Request) {
     if (status) query.status = status;
 
     // Text search with regex (case insensitive)
-    if (promptSearch) {
-      query.prompt = { $regex: promptSearch, $options: 'i' };
-    }
-    if (responseSearch) {
-      query.response = { $regex: responseSearch, $options: 'i' };
+    if (searchText) {
+      query.$or = [
+        { prompt: { $regex: searchText, $options: 'i' } },
+        { response: { $regex: searchText, $options: 'i' } }
+      ];
     }
 
     // Numeric range filtering for response time
