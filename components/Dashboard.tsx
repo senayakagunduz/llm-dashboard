@@ -108,6 +108,11 @@ export default function Dashboard() {
   }
 
   const handleDelete = async (id: string) => {
+    const isConfirmed = window.confirm('Are you sure you want to delete this log? This action cannot be undone.');
+    
+    if (!isConfirmed) {
+      return; // User cancelled the deletion
+    }
     try {
       const response = await fetch(`/api/logs/${id}`, {
         method: 'DELETE',
