@@ -2,9 +2,17 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Log } from '@/models/Log';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
+    // Check if user is admin
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== 'admin') {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
+
     const url = new URL(req.url || 'http://localhost');
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '50');
