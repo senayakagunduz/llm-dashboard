@@ -23,6 +23,8 @@ export async function GET(req: Request) {
     const status = url.searchParams.get('status');
     const minResponseTime = url.searchParams.get('minResponseTime');
     const maxResponseTime = url.searchParams.get('maxResponseTime');
+    const promptSearch = url.searchParams.get('promptSearch');
+    const responseSearch = url.searchParams.get('responseSearch');
 
     await connectDB();
 
@@ -38,12 +40,22 @@ export async function GET(req: Request) {
     if (requestId) query.requestId = requestId;
     if (status) query.status = status;
 
+    const searchConditions = [];
     // Text search with regex (case insensitive)
     if (searchText) {
-      query.$or = [
+      searchConditions.push(
         { prompt: { $regex: searchText, $options: 'i' } },
         { response: { $regex: searchText, $options: 'i' } }
-      ];
+      );
+    }
+    if (promptSearch) {
+      searchConditions.push({ prompt: { $regex: promptSearch, $options: 'i' } });
+    }
+    if (responseSearch) {
+      searchConditions.push({ response: { $regex: responseSearch, $options: 'i' } });
+    }
+    if (searchConditions.length > 0) {
+      query.$or = searchConditions;
     }
 
     // Numeric range filtering for response time
@@ -138,9 +150,6 @@ export async function GET(req: Request) {
     let stats = {
       total: 0,
       completed: 0,
-      // pending: 0,
-      // error: 0,
-      // avgResponseTime: 0
     };
 
     if (!isExport || total < 10000) {
