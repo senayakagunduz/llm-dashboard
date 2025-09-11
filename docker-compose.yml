@@ -2,21 +2,21 @@ version: '3.8'
 
 services:
   mongo:
-    image: mongo
-    container_name: mongo
-    ports:
-      - '27017:27017'
+    image: mongo:latest
+    container_name: mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: llm-monitoring
+    ports:
+      - '27017:27017'
     volumes:
       - mongo-data:/data/db
 
   nextjs:
     build:
       context: .
-       dockerfile: Dockerfile
-    # container_name: nextjs-app
+      dockerfile: Dockerfile
     ports:
       - '3000:3000'
     environment:
@@ -27,10 +27,10 @@ services:
     depends_on:
       - mongo
     restart: unless-stopped
-   # volumes:
-      # - .:/app
-      # - /app/node_modules
-      # - /app/.next
+    # volumes:
+    #   - .:/app
+    #   - /app/node_modules
+    #   - /app/.next
 
 volumes:
   mongo-data:
