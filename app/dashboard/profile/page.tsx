@@ -24,7 +24,10 @@ function ProfilePage() {
 
       <button className="bg-zinc-800 px-4 py-2 block mb-2"
         onClick={() => {
-          signOut();
+          signOut({
+            callbackUrl: '/signin',
+            redirect: true,
+          });
         }}
       >
         Logout
