@@ -824,8 +824,21 @@ export default function Dashboard() {
               ) : logs.length > 0 ? (
                 <div className="space-y-4">
                   {logs.map((log, index) => (
-                    <div key={log._id} className="flex flex-wrap group bg-gray-50 hover:bg-blue-50 rounded-xl p-5 border border-transparent hover:border-blue-200 transition-all duration-200">
-                      <div className="flex flex-col md:flex-row items-start space-x-4">
+                    <div key={log._id} className="flex flex-wrap group bg-gray-50 hover:bg-blue-50 rounded-xl p-5 border border-transparent hover:border-blue-200 transition-all duration-200 relative">
+                      {/* Trash Icon - Positioned at top right */}
+                      {session?.user?.role === 'admin' && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(log._id);
+                          }}
+                          className="absolute top-3 right-3 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                          title="Delete log"
+                        >
+                          <Trash className="w-4 h-4" />
+                        </button>
+                      )}
+                      <div className="flex flex-col md:flex-row items-start space-x-4 w-full">
                         {/* Activity Icon */}
                         <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                           <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -839,7 +852,6 @@ export default function Dashboard() {
                             <h4 className="text-xs md:text-lg font-medium text-gray-900 mb-2">
                               {log.prompt}
                             </h4>
-                            {session?.user?.role !== 'admin' && (<span onClick={() => handleDelete(log._id)}><Trash className='text-red-500' /></span>)}
 
                             {log.response && (
                               <div className="px-2 py-3">

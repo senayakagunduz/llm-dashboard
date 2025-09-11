@@ -4,9 +4,15 @@ import { connectDB } from '@/lib/db';
 import { Log } from '@/models/Log';
 import { authOptions } from '@/lib/auth';
 
+interface Params {
+  params: {
+    id: string;
+  };
+}
+
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: Params
 ) {
   try {
     const session = await getServerSession(authOptions);
