@@ -4,15 +4,9 @@ import { connectDB } from '@/lib/db';
 import { Log } from '@/models/Log';
 import { authOptions } from '@/lib/auth';
 
-interface RouteParams {
-  params: {
-    id: string;
-  };
-}
-
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,7 +18,7 @@ export async function DELETE(
 
     await connectDB();
     
-    const deletedLog = await Log.findByIdAndDelete(context.params.id);
+    const deletedLog = await Log.findByIdAndDelete(params.id);
     
     if (!deletedLog) {
       return new NextResponse('Log not found', { status: 404 });
