@@ -5,6 +5,8 @@ import { useSession, signOut } from 'next-auth/react';
 import { MessageSquare, UserCircle2, AlertCircle, CheckCircle, CheckCircle2, Settings, Filter, X, Search, Calendar, RefreshCw, Trash } from 'lucide-react';
 import Link from 'next/link';
 import JSZip from 'jszip';
+import Swal from 'sweetalert2'
+
 
 interface Stats {
   total: number;
@@ -108,10 +110,17 @@ export default function Dashboard() {
   }
 
   const handleDelete = async (id: string) => {
-    const isConfirmed = window.confirm('Are you sure you want to delete this log? This action cannot be undone.');
-    
-    if (!isConfirmed) {
-      return; // User cancelled the deletion
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "You won't be able to revert this!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) {
+      return;
     }
     try {
       const response = await fetch(`/api/logs/${id}`, {
@@ -832,7 +841,7 @@ export default function Dashboard() {
                     <div key={log._id} className="flex flex-wrap group bg-gray-50 hover:bg-blue-50 rounded-xl p-5 border border-transparent hover:border-blue-200 transition-all duration-200 relative">
                       {/* Trash Icon - Positioned at top right */}
                       {session?.user?.role === 'admin' && (
-                        <button 
+                        <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(log._id);
@@ -964,7 +973,7 @@ export default function Dashboard() {
             {!filters.searchText && pagination.pages > 1 ? (
               <div className="flex flex-wrap justify-between items-center mt-6 mb-4 px-2">
                 <div className="flex flex-wrap text-sm mb-2 text-gray-500">
-                Showing &nbsp; <span className="font-semibold">{(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span>&nbsp; of &nbsp;<span className="font-semibold">{pagination.total}</span> &nbsp;Logs
+                  Showing &nbsp; <span className="font-semibold">{(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span>&nbsp; of &nbsp;<span className="font-semibold">{pagination.total}</span> &nbsp;Logs
                 </div>
                 <div className="flex flex-wrap text-sm mb-2 text-gray-500">Filtered &nbsp;{logs.length} Logs</div>
                 <div className="flex text-lg lg:text-2xl space-x-2">
