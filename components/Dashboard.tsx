@@ -5,6 +5,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { MessageSquare, UserCircle2, AlertCircle, CheckCircle, CheckCircle2, Settings, Filter, X, Search, Calendar, RefreshCw, Trash } from 'lucide-react';
 import Link from 'next/link';
 import JSZip from 'jszip';
+import Swal from 'sweetalert2'
 
 interface Stats {
   total: number;
@@ -107,12 +108,18 @@ export default function Dashboard() {
     setIsExpanded(prev => ({ ...prev, [logId]: !prev[logId] }));
   }
 
+
   const handleDelete = async (id: string) => {
-    const isConfirmed = window.confirm('Are you sure you want to delete this log? This action cannot be undone.');
-    
-    if (!isConfirmed) {
-      return; // User cancelled the deletion
-    }
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!"
+    });
+    if (!result.isConfirmed) return;
     try {
       const response = await fetch(`/api/logs/${id}`, {
         method: 'DELETE',
@@ -124,10 +131,18 @@ export default function Dashboard() {
         throw new Error('Failed to delete log');
       }
       setLogs(prev => prev.filter(log => log._id !== id));
-      alert('Log deleted successfully');
+      await Swal.fire({
+        title: "Deleted!",
+        text: "Your file has been deleted.",
+        icon: "success"
+      });
     } catch (error) {
       console.error('Error deleting log:', error);
-      alert('An error occurred while deleting the log');
+      await Swal.fire(
+        'Error',
+        'An error occurred while deleting the log.',
+        'error'
+      );
     }
   }
   const applyDatePreset = async (preset: string) => {
