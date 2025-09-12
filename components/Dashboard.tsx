@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { MessageSquare, UserCircle2, AlertCircle, CheckCircle, CheckCircle2, Settings, Filter, X, Search, Calendar, RefreshCw } from 'lucide-react';
+import { MessageSquare, UserCircle2, AlertCircle, CheckCircle, CheckCircle2, Settings, Filter, X, Search, Calendar, RefreshCw, Trash } from 'lucide-react';
 import Link from 'next/link';
 import JSZip from 'jszip';
 
@@ -38,7 +38,7 @@ interface Filters {
   status?: string;
   promptSearch: string;
   responseSearch: string;
-  page?:number;
+  page?: number;
 }
 
 export default function Dashboard() {
@@ -55,7 +55,7 @@ export default function Dashboard() {
   const [logs, setLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const [isExpanded, setIsExpanded] = useState<Record<string,boolean>>({});
+  const [isExpanded, setIsExpanded] = useState<Record<string, boolean>>({});
 
   const [pagination, setPagination] = useState({
     page: 1,
@@ -81,7 +81,7 @@ export default function Dashboard() {
     status: '',
     promptSearch: '',
     responseSearch: '',
-    page:1
+    page: 1
   });
 
   // Unique values for dropdowns
@@ -103,8 +103,32 @@ export default function Dashboard() {
     { label: 'This month', value: 'month' }
   ];
 
-  const toggleExpand = (logId:string) => {
-    setIsExpanded(prev=>({...prev, [logId]: !prev[logId]}));
+  const toggleExpand = (logId: string) => {
+    setIsExpanded(prev => ({ ...prev, [logId]: !prev[logId] }));
+  }
+
+  const handleDelete = async (id: string) => {
+    const isConfirmed = window.confirm('Are you sure you want to delete this log? This action cannot be undone.');
+    
+    if (!isConfirmed) {
+      return; // User cancelled the deletion
+    }
+    try {
+      const response = await fetch(`/api/logs/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      if (!response.ok) {
+        throw new Error('Failed to delete log');
+      }
+      setLogs(prev => prev.filter(log => log._id !== id));
+      alert('Log deleted successfully');
+    } catch (error) {
+      console.error('Error deleting log:', error);
+      alert('An error occurred while deleting the log');
+    }
   }
   const applyDatePreset = async (preset: string) => {
     const now = new Date();
@@ -344,7 +368,7 @@ export default function Dashboard() {
 
       if (!logsToExport || logsToExport.length === 0) {
         console.warn('No logs found with current filters');
-        alert("Filtrelenmiş sonuç bulunamadı. Lütfen filtrelerinizi kontrol edin.");
+        alert(" there is no result with current filters. Please check your filters.");
         return;
       }
 
@@ -363,7 +387,7 @@ export default function Dashboard() {
       }
 
       if (logsToExport.length === 0) {
-        alert("Arama kriterinize uygun sonuç bulunamadı.");
+        alert(" there is no result with current filters. Please check your filters.");
         return;
       }
 
@@ -400,24 +424,24 @@ export default function Dashboard() {
 
       // Add summary file
       const summaryContent = `
-  Veri İhracat Özeti
+  Export Summary
   ==================
-  İhracat Tarihi: ${new Date().toLocaleString('tr-TR')}
-  İhracat Eden: ${session?.user?.email || 'Bilinmeyen Kullanıcı'}
-  Toplam Kayıt: ${logsToExport.length}
+  Export Date: ${new Date().toLocaleString('tr-TR')}
+  Exported By: ${session?.user?.email || 'Unknown User'}
+  Total Records: ${logsToExport.length}
   
-  Uygulanan Filtreler:
+  Applied Filters:
   ${Object.entries(filters)
           .filter(([key, value]) => value && value !== '')
           .map(([key, value]) => `- ${key}: ${value}`)
-          .join('\n') || 'Filtre uygulanmadı'}
+          .join('\n') || 'didnt apply'}
   
-  İhracat Dosyaları:
-  - filtered_logs.json: Ana veri dosyası (JSON formatında)
-  - summary.txt: Bu özet dosyası
+  Export Files:
+  - filtered_logs.json: Main data file (JSON format)
+  - summary.txt: This summary file
   
-  Kullanım Notu:
-  JSON dosyasını Excel'de açmak için "Veri > JSON'dan" seçeneğini kullanabilirsiniz.
+  Usage Note:
+  JSON file can be opened in Excel using "Data > From JSON" option.
       `.trim();
 
       zip.file('summary.txt', summaryContent);
@@ -452,12 +476,12 @@ export default function Dashboard() {
       console.log('Export completed successfully!');
 
       // Show success message
-      alert(`İhracat başarılı! ${logsToExport.length} kayıt indirildi.`);
+      alert(`Export successful! ${logsToExport.length} records downloaded.`);
 
     } catch (error) {
       console.error('Export error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Bilinmeyen hata oluştu';
-      alert(`İndirme hatası: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Export failed: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -805,8 +829,21 @@ export default function Dashboard() {
               ) : logs.length > 0 ? (
                 <div className="space-y-4">
                   {logs.map((log, index) => (
-                    <div key={log._id} className="flex flex-wrap group bg-gray-50 hover:bg-blue-50 rounded-xl p-5 border border-transparent hover:border-blue-200 transition-all duration-200">
-                      <div className="flex flex-col md:flex-row items-start space-x-4">
+                    <div key={log._id} className="flex flex-wrap group bg-gray-50 hover:bg-blue-50 rounded-xl p-5 border border-transparent hover:border-blue-200 transition-all duration-200 relative">
+                      {/* Trash Icon - Positioned at top right */}
+                      {session?.user?.role === 'admin' && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(log._id);
+                          }}
+                          className="absolute top-3 right-3 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                          title="Delete log"
+                        >
+                          <Trash className="w-4 h-4" />
+                        </button>
+                      )}
+                      <div className="flex flex-col md:flex-row items-start space-x-4 w-full">
                         {/* Activity Icon */}
                         <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                           <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -824,10 +861,10 @@ export default function Dashboard() {
                             {log.response && (
                               <div className="px-2 py-3">
                                 <p className="text-gray-800 text-xs md:text-sm leading-relaxed">
-                                {isExpanded[log._id] ? log.response : log.response.substring(0, 150)}
+                                  {isExpanded[log._id] ? log.response : log.response.substring(0, 150)}
                                   {log.response.length > 150 && (
-                                    <span className="text-blue-500 cursor-pointer hover:underline ml-1" onClick={(e)=>{e.stopPropagation();toggleExpand(log._id);}}>
-                                       {isExpanded[log._id] ? 'less show' : 'read more'}
+                                    <span className="text-blue-500 cursor-pointer hover:underline ml-1" onClick={(e) => { e.stopPropagation(); toggleExpand(log._id); }}>
+                                      {isExpanded[log._id] ? 'less show' : 'read more'}
                                     </span>
                                   )}
                                 </p>
@@ -927,7 +964,7 @@ export default function Dashboard() {
             {!filters.searchText && pagination.pages > 1 ? (
               <div className="flex flex-wrap justify-between items-center mt-6 mb-4 px-2">
                 <div className="flex flex-wrap text-sm mb-2 text-gray-500">
-                  Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> &nbsp;logs
+                  Showing &nbsp; <span className="font-semibold">{(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)}</span>&nbsp; of &nbsp;<span className="font-semibold">{pagination.total}</span> &nbsp;Logs
                 </div>
                 <div className="flex flex-wrap text-sm mb-2 text-gray-500">Filtered &nbsp;{logs.length} Logs</div>
                 <div className="flex text-lg lg:text-2xl space-x-2">
