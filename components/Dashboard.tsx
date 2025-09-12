@@ -133,10 +133,17 @@ export default function Dashboard() {
         throw new Error('Failed to delete log');
       }
       setLogs(prev => prev.filter(log => log._id !== id));
-      alert('Log deleted successfully');
+      await Swal.fire({
+        title: "Deleted!",
+        text: "Your file has been deleted.",
+        icon: "success"
+      });
     } catch (error) {
-      console.error('Error deleting log:', error);
-      alert('An error occurred while deleting the log');
+      await Swal.fire(
+        'Error',
+        'An error occurred while deleting the log.',
+        'error'
+      );
     }
   }
   const applyDatePreset = async (preset: string) => {
