@@ -18,6 +18,7 @@ bun dev
 
 ```
 cd existing_repo
+git remote add origin http://github.com/senayakagunduz/llm-dashboard
 git branch -M main
 git push -uf origin main
 ```
