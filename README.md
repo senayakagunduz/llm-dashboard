@@ -1,3 +1,7 @@
+kullanıcı adı ve şifre create-admin.js de yazıyor.
+admin@arcelik.com
+admin123
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

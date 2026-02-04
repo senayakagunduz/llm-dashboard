@@ -14,7 +14,7 @@ services:
 
   nextjs:
     build:
-      context: .
+      context: 
        dockerfile: Dockerfile
     # container_name: nextjs-app
     ports:

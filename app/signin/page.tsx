@@ -49,7 +49,7 @@ export default function SignIn() {
                         <LogIn className="h-8 w-8 text-white" />
                     </div>
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                        Arçelik LLM Monitoring
+                        LLM Monitoring
                     </h2>
                 </div>
 
@@ -174,7 +174,7 @@ export default function SignIn() {
                     {/* Footer */}
                     <div className="mt-6 text-center">
                         <p className="text-sm text-gray-600">
-                            Powered by SemperTech
+                            Powered by abc-tech
                         </p>
                     </div>
                 </div>
