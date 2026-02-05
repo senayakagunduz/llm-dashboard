@@ -1,13 +1,9 @@
-{/*export {default} from "next-auth/middleware"
-
-export const config = {
-  matcher: ['/', '/dashboard/:path*', '/profile/:path*']
-}*/}
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default withAuth(
-  function middleware(req) {
+export const middleware = withAuth(
+  function middleware(req: NextRequest) {
     return NextResponse.next();
   },
   {
