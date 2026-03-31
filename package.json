@@ -1,8 +1,8 @@
 {
   "name": "arcelik-monitoring",
   "engines": {
-  "node": "24.x"
-},
+    "node": "24.x"
+  },
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "create-admin": "tsx scripts/createAdmin.ts",
+    "create-admin": "node scripts/create-admin.js",
     "create-users": "node scripts/create-admin.js multiple"
   },
   "dependencies": {
@@ -21,6 +21,7 @@
     "jsonwebtoken": "^9.0.2",
     "jszip": "^3.10.1",
     "lucide-react": "^0.525.0",
+    "mangodb": "^1.0.0",
     "mongoose": "^8.22.0",
     "next": "^14.1.0",
     "next-auth": "^4.24.13",
@@ -37,6 +38,7 @@
     "@types/react-dom": "^19.0.0",
     "tailwindcss": "^4.0.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.3"
   }
 }
